@@ -1,0 +1,15 @@
+{
+  "required": true,
+  "package": "io.github.techtastic.newtons_nonsense.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "minVersion": "0.8",
+  "mixins": [
+    "MixinServerLevel",
+    "MixinBlockDisplay"
+  ],
+  "client": [
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

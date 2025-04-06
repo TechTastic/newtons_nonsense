@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "id": "newtons_nonsense",
+  "version": "${version}",
+  "name": "Newton's Nonsense",
+  "description": "A Minecraft physics mod heavily inspired by Valkyrien Skies 2!",
+  "authors": [
+    "TechTastic"
+  ],
+  "contact": {
+    "homepage": "https://fabricmc.net/",
+    "sources": "https://github.com/FabricMC/fabric-example-mod"
+  },
+  "license": "MIT",
+  "icon": "assets/newtons_nonsense/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "io.github.techtastic.newtons_nonsense.fabric.NewtonsNonsenseFabric"
+    ],
+    "client": [
+      "io.github.techtastic.newtons_nonsense.fabric.client.NewtonsNonsenseFabricClient"
+    ]
+  },
+  "mixins": [
+    "newtons_nonsense.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.16.12",
+    "minecraft": "~1.21.4",
+    "java": ">=21",
+    "architectury": ">=15.0.1",
+    "fabric-api": "*"
+  },
+  "suggests": {
+    "another-mod": "*"
+  }
+}
