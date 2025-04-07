@@ -175,6 +175,7 @@ public class Stage {
 
         if (this.ground == null) {
             this.ground = Backstage.createStaticBody(Backstage.createBoxGeometry(0, 0, 0), 0, 0, 0);
+            this.scene.addActor(ground);
         }
 
         newBlock.setFlag(PxShapeFlagEnum.eSCENE_QUERY_SHAPE, true);
