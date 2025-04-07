@@ -9,6 +9,8 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.NotNull;
+import physx.physics.PxRigidBodyFlagEnum;
+import physx.physics.PxRigidDynamic;
 
 public class ActorSpawnerItem extends Item {
     public ActorSpawnerItem(Properties properties) {
@@ -24,7 +26,8 @@ public class ActorSpawnerItem extends Item {
             return InteractionResult.SUCCESS;
 
         BlockPos pos = useOnContext.getClickedPos().relative(useOnContext.getClickedFace());
-        Stage.getOrCreateStage(sLevel).addActor(Backstage.createDefaultBox(pos.getX(), pos.getY(), pos.getZ()));
+        PxRigidDynamic box = Backstage.createDefaultBox(pos.getX(), pos.getY(), pos.getZ());
+        Stage.getOrCreateStage(sLevel).addActor(box);
 
         return InteractionResult.SUCCESS;
     }

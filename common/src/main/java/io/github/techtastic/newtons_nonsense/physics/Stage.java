@@ -32,6 +32,9 @@ public class Stage {
 
     public Stage(ArrayList<PxActor> actors) {
         this.scene = Backstage.createEmptyScene();
+        /*PxBroadPhaseRegion region = new PxBroadPhaseRegion();
+        region.setMBounds(Backstage.getMaxBounds());
+        this.scene.addBroadPhaseRegion(region);*/
         this.actors = actors;
 
         this.actors.forEach(this.scene::addActor);
@@ -171,14 +174,27 @@ public class Stage {
     }
 
     public void addToGround(PxShape newBlock, BlockPos pos) {
-        this.groundShapes.put(pos, newBlock);
+        try (MemoryStack mem = MemoryStack.stackPush()) {
+            if (this.ground == null) {
+                this.ground = Backstage.createStaticBody(Backstage.createBoxGeometry(0, 0, 0), 0, 0, 0);
+                this.ground.setActorFlag(PxActorFlagEnum.eDISABLE_GRAVITY, false);
+                this.ground.setActorFlag(PxActorFlagEnum.eDISABLE_SIMULATION, false);
 
-        if (this.ground == null) {
-            this.ground = Backstage.createStaticBody(Backstage.createBoxGeometry(0, 0, 0), 0, 0, 0);
-            this.scene.addActor(ground);
+                /*PxVec3 tempVec = PxVec3.createAt(mem, MemoryStack::nmalloc, 30_000_000, 1_000, 30_000_000);
+                this.ground.getWorldBounds().setMaximum(tempVec);
+                tempVec.setX(-tempVec.getX());
+                tempVec.setY(-128);
+                tempVec.setZ(-tempVec.getZ());
+                this.ground.getWorldBounds().setMinimum(tempVec);*/
+
+                this.scene.addActor(ground);
+            }
+
+            newBlock.setFlag(PxShapeFlagEnum.eSCENE_QUERY_SHAPE, true);
+            newBlock.setFlag(PxShapeFlagEnum.eSIMULATION_SHAPE, true);
+            this.ground.attachShape(newBlock);
+
+            this.groundShapes.put(pos, newBlock);
         }
-
-        newBlock.setFlag(PxShapeFlagEnum.eSCENE_QUERY_SHAPE, true);
-        this.ground.attachShape(newBlock);
     }
 }

@@ -2,6 +2,7 @@ package io.github.techtastic.newtons_nonsense.physics.pipeline;
 
 import io.github.techtastic.newtons_nonsense.physics.Stage;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.phys.Vec3;
 import org.lwjgl.system.MemoryStack;
 import physx.PxTopLevelFunctions;
@@ -65,10 +66,27 @@ public class Backstage {
     public static PxScene createEmptyScene() {
         try (MemoryStack mem = MemoryStack.stackPush()) {
             PxSceneDesc sceneDesc = PxSceneDesc.createAt(mem, MemoryStack::nmalloc, physics.getTolerancesScale());
-            sceneDesc.setGravity(PxVec3.createAt(mem, MemoryStack::nmalloc, 0f, -9.81f, 0f));
+            PxVec3 tempVec = PxVec3.createAt(mem, MemoryStack::nmalloc, 0f, -9.81f, 0f);
+            sceneDesc.setGravity(tempVec);
             sceneDesc.setCpuDispatcher(defaultDispatcher);
             sceneDesc.setFilterShader(PxTopLevelFunctions.DefaultFilterShader());
+            sceneDesc.setSanityBounds(getMaxBounds());
+            sceneDesc.setBroadPhaseType(PxBroadPhaseTypeEnum.eABP);
+
             return physics.createScene(sceneDesc);
+        }
+    }
+
+    public static PxBounds3 getMaxBounds() {
+        try (MemoryStack mem = MemoryStack.stackPush()) {
+            PxBounds3 bounds = PxBounds3.createAt(mem, MemoryStack::nmalloc);
+            PxVec3 tempVec = PxVec3.createAt(mem, MemoryStack::nmalloc, 30_000_000, 1_000, 30_000_000);
+            bounds.setMaximum(tempVec);
+            tempVec.setX(-tempVec.getX());
+            tempVec.setY(-128);
+            tempVec.setZ(-tempVec.getZ());
+            bounds.setMinimum(tempVec);
+            return bounds;
         }
     }
 
