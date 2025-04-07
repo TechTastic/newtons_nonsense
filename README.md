@@ -14,11 +14,11 @@ Initial shape is based on the `VoxelShape` of a block at the given state.
 
 
 ### To Do:
-- [ ] Setup `Backstage` with methods to create scenes and necessary helper methods
+- [X] Setup `Backstage` with methods to create scenes and necessary helper methods
 - [ ] Setup `Stage` and attach it to `ServerLevel`
   - [ ] Properly handle ground mesh per level
   - [ ] Properly handle creating, updating, and deleting Mimics
   - [ ] Properly handle chunk loading, unloading
-  - [ ] Properly handle server level ticking, server level loading, server level unloading
+  - [X] Properly handle server level ticking, server level loading, server level unloading
 - [ ] Setup `Mimic`s
   - [ ] Properly handle rendering `Mimic`s (packets and rendering shenanigans)
