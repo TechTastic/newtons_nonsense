@@ -11,30 +11,22 @@ import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.chunk.storage.SerializableChunkData;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.system.MemoryStack;
-import physx.common.PxBaseFlagEnum;
-import physx.common.PxIDENTITYEnum;
-import physx.common.PxVec3;
-import physx.extensions.PxRigidActorExt;
-import physx.extensions.PxRigidBodyExt;
-import physx.geometry.PxBVH;
+import physx.geometry.PxBoxGeometry;
 import physx.physics.*;
-import physx.support.PxShapePtr;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 
 public class Stage {
     public final PxScene scene;
-    public PxRigidStatic ground = null;
+    public PxRigidStatic ground = Backstage.createEmptyStageGround();
     public HashMap<BlockPos, PxShape> groundShapes = new HashMap<>();
     public final ArrayList<PxActor> actors;
     private boolean simulate = false;
 
     public Stage(ArrayList<PxActor> actors) {
         this.scene = Backstage.createEmptyScene();
-        /*PxBroadPhaseRegion region = new PxBroadPhaseRegion();
-        region.setMBounds(Backstage.getMaxBounds());
-        this.scene.addBroadPhaseRegion(region);*/
+        this.scene.addActor(this.ground);
         this.actors = actors;
 
         this.actors.forEach(this.scene::addActor);
@@ -87,11 +79,21 @@ public class Stage {
 
                         // Ill make a VoxelShape to PxShape later...
 
-                        PxShape block = Backstage.createDefaultBoxShape(truePos.getX(), truePos.getY(), truePos.getZ());
+                        PxBoxGeometry boxGeometry = Backstage.createBoxGeometry(.5f, .5f, .5f);
+                        PxShape boxShape = Backstage.createShape(
+                                boxGeometry,
+                                (float) truePos.getCenter().x,
+                                (float) truePos.getCenter().y,
+                                (float) truePos.getCenter().z,
+                                Backstage.defaultMaterial
+                        );
+                        boxShape.setContactOffset(1.5f);
+                        boxShape.setRestOffset(1f);
 
                         // Adjust Material here
 
-                        stage.addToGround(block, truePos);
+                        stage.ground.attachShape(boxShape);
+                        stage.groundShapes.put(truePos, boxShape);
                     }
                 }
             }
@@ -171,30 +173,5 @@ public class Stage {
         this.actors.forEach(PxActor::release);
         this.actors.clear();
         this.scene.release();
-    }
-
-    public void addToGround(PxShape newBlock, BlockPos pos) {
-        try (MemoryStack mem = MemoryStack.stackPush()) {
-            if (this.ground == null) {
-                this.ground = Backstage.createStaticBody(Backstage.createBoxGeometry(0, 0, 0), 0, 0, 0);
-                this.ground.setActorFlag(PxActorFlagEnum.eDISABLE_GRAVITY, false);
-                this.ground.setActorFlag(PxActorFlagEnum.eDISABLE_SIMULATION, false);
-
-                /*PxVec3 tempVec = PxVec3.createAt(mem, MemoryStack::nmalloc, 30_000_000, 1_000, 30_000_000);
-                this.ground.getWorldBounds().setMaximum(tempVec);
-                tempVec.setX(-tempVec.getX());
-                tempVec.setY(-128);
-                tempVec.setZ(-tempVec.getZ());
-                this.ground.getWorldBounds().setMinimum(tempVec);*/
-
-                this.scene.addActor(ground);
-            }
-
-            newBlock.setFlag(PxShapeFlagEnum.eSCENE_QUERY_SHAPE, true);
-            newBlock.setFlag(PxShapeFlagEnum.eSIMULATION_SHAPE, true);
-            this.ground.attachShape(newBlock);
-
-            this.groundShapes.put(pos, newBlock);
-        }
     }
 }

@@ -117,9 +117,26 @@ public class Backstage {
         try (MemoryStack mem = MemoryStack.stackPush()) {
             PxBoxGeometry box = createBoxGeometry(0.5f, 0.5f, 0.5f);
             pose.setP(PxVec3.createAt(mem, MemoryStack::nmalloc, posX, posY, posZ));
-            PxShape shape = physics.createShape(box, defaultMaterial, true);
+            PxShapeFlags shapeFlags = PxShapeFlags.createAt(mem, MemoryStack::nmalloc, (byte) (PxShapeFlagEnum.eSCENE_QUERY_SHAPE.value | PxShapeFlagEnum.eSIMULATION_SHAPE.value));
+            PxShape shape = physics.createShape(box, defaultMaterial, true, shapeFlags);
             shape.setLocalPose(pose);
             shape.setSimulationFilterData(Backstage.defaultFilterData);
+            return shape;
+        }
+    }
+
+    public static PxShape createShape(PxGeometry geometry, float offsetX, float offsetY, float offsetZ, PxMaterial material) {
+        try (MemoryStack mem = MemoryStack.stackPush()) {
+            PxShapeFlags shapeFlags = PxShapeFlags.createAt(mem, MemoryStack::nmalloc,
+                    (byte) (PxShapeFlagEnum.eSCENE_QUERY_SHAPE.value | PxShapeFlagEnum.eSIMULATION_SHAPE.value));
+            PxShape shape = physics.createShape(geometry, material, true, shapeFlags);
+
+            PxTransform pose = PxTransform.createAt(mem, MemoryStack::nmalloc, PxIDENTITYEnum.PxIdentity);
+            pose.setP(PxVec3.createAt(mem, MemoryStack::nmalloc, offsetX, offsetY, offsetZ));
+
+            shape.setLocalPose(pose);
+            shape.setSimulationFilterData(Backstage.defaultFilterData);
+
             return shape;
         }
     }
@@ -143,6 +160,14 @@ public class Backstage {
             PxRigidStatic body = physics.createRigidStatic(pose);
             body.attachShape(fromShape);
             return body;
+        }
+    }
+
+    public static PxRigidStatic createEmptyStageGround() {
+        try (MemoryStack mem = MemoryStack.stackPush()) {
+            PxTransform pose = PxTransform.createAt(mem, MemoryStack::nmalloc, PxIDENTITYEnum.PxIdentity);
+            pose.setP(PxVec3.createAt(mem, MemoryStack::nmalloc, 0, 0, 0));
+            return physics.createRigidStatic(pose);
         }
     }
 

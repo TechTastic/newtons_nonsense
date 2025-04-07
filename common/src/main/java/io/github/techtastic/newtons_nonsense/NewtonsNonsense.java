@@ -1,9 +1,6 @@
 package io.github.techtastic.newtons_nonsense;
 
-import dev.architectury.event.events.common.ChunkEvent;
-import dev.architectury.event.events.common.EntityEvent;
-import dev.architectury.event.events.common.LifecycleEvent;
-import dev.architectury.event.events.common.TickEvent;
+import dev.architectury.event.events.common.*;
 import dev.architectury.registry.registries.DeferredRegister;
 import dev.architectury.registry.registries.RegistrySupplier;
 import io.github.techtastic.newtons_nonsense.item.custom.ActorSpawnerItem;
