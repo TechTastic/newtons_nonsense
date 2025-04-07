@@ -97,10 +97,18 @@ public class Backstage {
 
     public static PxShape createDefaultBoxShape(float posX, float posY, float posZ, PxTransform pose) {
         try (MemoryStack mem = MemoryStack.stackPush()) {
-            PxBoxGeometry box = PxBoxGeometry.createAt(mem, MemoryStack::nmalloc, 0.5f, 0.5f, 0.5f);
+            PxBoxGeometry box = createBoxGeometry(0.5f, 0.5f, 0.5f);
             pose.setP(PxVec3.createAt(mem, MemoryStack::nmalloc, posX, posY, posZ));
+            PxShape shape = physics.createShape(box, defaultMaterial, true);
+            shape.setLocalPose(pose);
+            shape.setSimulationFilterData(Backstage.defaultFilterData);
+            return shape;
+        }
+    }
 
-            return physics.createShape(box, defaultMaterial, true);
+    public static PxBoxGeometry createBoxGeometry(float lenX, float lenY, float lenZ) {
+        try (MemoryStack mem = MemoryStack.stackPush()) {
+            return PxBoxGeometry.createAt(mem, MemoryStack::nmalloc, lenX, lenY, lenZ);
         }
     }
 
@@ -114,7 +122,6 @@ public class Backstage {
         try (MemoryStack mem = MemoryStack.stackPush()) {
             PxTransform pose = PxTransform.createAt(mem, MemoryStack::nmalloc, PxIDENTITYEnum.PxIdentity);
             pose.setP(PxVec3.createAt(mem, MemoryStack::nmalloc, posX, posY, posZ));
-
             PxRigidStatic body = physics.createRigidStatic(pose);
             body.attachShape(fromShape);
             return body;
