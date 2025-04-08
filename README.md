@@ -13,6 +13,16 @@ Initial mass, material, and type are derived from JSON and will have a way to mo
 Initial shape is based on the `VoxelShape` of a block at the given state.
 
 
+### Commands:
+There are a few commands I will create for debugging
+- [X] `add_actor` adds an actor to the Stage
+  - [ ] `static` or `dynamic` actor type
+  - [ ] `lengths` size of box
+  - [X] `pos` position
+  - [ ] `quat` rotation
+- [X] `remove_all_actors` removes all actors from the Stage
+- [X] `list_materials` lists all runtime materials
+
 ### To Do:
 - [X] Setup `Backstage` with methods to create scenes and necessary helper methods
 - [ ] Setup `Stage` and attach it to `ServerLevel`
