@@ -2,7 +2,10 @@ package io.github.techtastic.newtons_nonsense.physics.pipeline;
 
 import io.github.techtastic.newtons_nonsense.physics.Stage;
 import io.github.techtastic.newtons_nonsense.physics.chunks.ChunkAggregate;
+import io.github.techtastic.newtons_nonsense.registry.physics.materials.PhysicsMaterialRegistry;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Registry;
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
@@ -30,7 +33,6 @@ public class Backstage {
     public static final PxCookingParams cookingParams;
 
     public static final PxCpuDispatcher defaultDispatcher;
-    public static final PxMaterial defaultMaterial;
     public static final PxFilterData defaultFilterData;
 
     public static final PxSerializationRegistry serializer;
@@ -87,8 +89,8 @@ public class Backstage {
         }
     }
 
-    public static PxRigidDynamic createDynamicBox(float globalX, float globalY, float globalZ) {
-        PxShape shape = createBoxShape(.5f, .5f, .5f, 0, 0, 0, defaultMaterial);
+    public static PxRigidDynamic createDynamicBox(float globalX, float globalY, float globalZ, PxMaterial material) {
+        PxShape shape = createBoxShape(.5f, .5f, .5f, 0, 0, 0, material);
         return createDynamicBodyWithShapes(globalX, globalY, globalZ, shape);
     }
 
@@ -128,7 +130,8 @@ public class Backstage {
         }
     }
 
-    public static ChunkAggregate createChunkAggregate(ChunkAccess chunk) {
+    public static ChunkAggregate createChunkAggregate(ChunkAccess chunk, RegistryAccess access) {
+        Registry<PxMaterial> materialRegistry = access.lookupOrThrow(PhysicsMaterialRegistry.MATERIAL_REGISTRY_KEY);
         int maxBlocksInChunk = LevelChunkSection.SECTION_WIDTH * LevelChunkSection.SECTION_WIDTH * (Math.abs(chunk.getMinY()) + Math.abs(chunk.getMaxY()));
         ChunkAggregate agg = new ChunkAggregate(
                 physics.createAggregate(maxBlocksInChunk, maxBlocksInChunk, false),
@@ -161,7 +164,7 @@ public class Backstage {
                                 0,
                                 0,
                                 0,
-                                defaultMaterial
+                                materialRegistry.get(PhysicsMaterialRegistry.DEFAULT_MATERIAL).get().value()
                         );
 
                         // Adjust Material here
@@ -182,7 +185,8 @@ public class Backstage {
         return agg;
     }
 
-    public static PxRigidStatic createChunkBody(ChunkAccess chunk) {
+    public static PxRigidStatic createChunkBody(ChunkAccess chunk, RegistryAccess access) {
+        Registry<PxMaterial> materialRegistry = access.lookupOrThrow(PhysicsMaterialRegistry.MATERIAL_REGISTRY_KEY);
         ArrayList<PxShape> shapes = new ArrayList<>();
 
         // Loop over sections that could contain blocks
@@ -213,7 +217,7 @@ public class Backstage {
                                 (float) truePos.getCenter().x,
                                 (float) truePos.getCenter().y,
                                 (float) truePos.getCenter().z,
-                                defaultMaterial
+                                materialRegistry.get(PhysicsMaterialRegistry.DEFAULT_MATERIAL).get().value()
                         ));
                     }
                 }
@@ -235,7 +239,7 @@ public class Backstage {
         // create PhysX main physics object
         PxTolerancesScale tolerances = new PxTolerancesScale();
         physics = PxTopLevelFunctions.CreatePhysics(PX_PHYSICS_VERSION, foundation, tolerances);
-        defaultMaterial = physics.createMaterial(0.5f, 0.5f, 0.5f);
+        //defaultMaterial = physics.createMaterial(0.5f, 0.5f, 0.5f);
         defaultFilterData = new PxFilterData(0, 0, 0, 0);
         defaultFilterData.setWord0(1);          // collision group: 0 (i.e. 1 << 0)
         defaultFilterData.setWord1(0xffffffff); // collision mask: collide with everything

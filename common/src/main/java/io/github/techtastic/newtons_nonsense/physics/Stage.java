@@ -40,7 +40,7 @@ public class Stage {
         if (level == null) return;
 
         Stage stage = Stage.getOrCreateStage(level);
-        ChunkAggregate chunkAgg = Backstage.createChunkAggregate(chunk);
+        ChunkAggregate chunkAgg = Backstage.createChunkAggregate(chunk, level.registryAccess());
         stage.scene.addAggregate(chunkAgg.aggregate());
         stage.chunkAggregates.put(chunk.getPos(), chunkAgg);
     }
