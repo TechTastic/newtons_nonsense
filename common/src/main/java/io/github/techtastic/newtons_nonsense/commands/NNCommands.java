@@ -11,10 +11,9 @@ import net.minecraft.commands.arguments.coordinates.Vec3Argument;
 import net.minecraft.core.Holder;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import physx.physics.PxActor;
-import physx.physics.PxMaterial;
-import physx.physics.PxRigidDynamic;
+import physx.physics.*;
 
 import java.lang.ref.Reference;
 import java.util.ArrayList;
@@ -28,7 +27,7 @@ public class NNCommands {
                 .then(Commands.argument("pos", Vec3Argument.vec3())
                         .executes(context -> {
                             Vec3 pos = Vec3Argument.getVec3(context, "pos");
-                            PxRigidDynamic box = Backstage.createDynamicBox((float) pos.x, (float) pos.y, (float) pos.z);
+                            PxRigidDynamic box = Backstage.createDynamicBox((float) pos.x, (float) pos.y, (float) pos.z, registry.lookupOrThrow(PhysicsMaterialRegistry.MATERIAL_REGISTRY_KEY).getOrThrow(PhysicsMaterialRegistry.DEFAULT_MATERIAL).value());
                             Stage.getOrCreateStage(context.getSource().getLevel()).addActor(box);
 
                             context.getSource().sendSuccess(() -> Component.literal("Added new dynamic actor at " + pos), false);
@@ -70,6 +69,33 @@ public class NNCommands {
 
                     return 1;
                 })
+        );
+
+
+
+        dispatcher.register(Commands.literal("add_ground_actor")
+                .requires(source -> source.hasPermission(2))
+                .then(Commands.argument("firstCorner", Vec3Argument.vec3())
+                        .then(Commands.argument("secondCorner", Vec3Argument.vec3())
+                        .executes(context -> {
+                            Vec3 firstCorner = Vec3Argument.getVec3(context, "firstCorner");
+                            Vec3 secondCorner = Vec3Argument.getVec3(context, "secondCorner");
+                            AABB aabb = new AABB(firstCorner, secondCorner);
+                            PxShape groundShape = Backstage.createBoxShape(
+                                    (float) aabb.getXsize() / 2,
+                                    (float) aabb.getYsize() / 2,
+                                    (float) aabb.getZsize() / 2,
+                                    0, 0, 0,
+                                    registry.lookupOrThrow(PhysicsMaterialRegistry.MATERIAL_REGISTRY_KEY).getOrThrow(PhysicsMaterialRegistry.DEFAULT_MATERIAL).value()
+                            );
+                            PxRigidStatic ground = Backstage.createStaticBodyWithShapes((float) aabb.getCenter().x, (float) aabb.getCenter().y, (float) aabb.getCenter().z, groundShape);
+                            Stage.getOrCreateStage(context.getSource().getLevel()).addActor(ground);
+
+                            context.getSource().sendSuccess(() -> Component.literal("Added new ground actor from " + firstCorner + " to " + secondCorner), false);
+
+                            return 1;
+                        })
+                ))
         );
     }
 }

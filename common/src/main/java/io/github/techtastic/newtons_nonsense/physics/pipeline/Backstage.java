@@ -126,6 +126,7 @@ public class Backstage {
             PxShapeFlags shapeFlags = new PxShapeFlags((byte) (PxShapeFlagEnum.eSIMULATION_SHAPE.value | PxShapeFlagEnum.eSCENE_QUERY_SHAPE.value));
             PxShape shape = physics.createShape(geo, material, false, shapeFlags);
             shape.setLocalPose(pose);
+            shape.setSimulationFilterData(defaultFilterData);
             return shape;
         }
     }
