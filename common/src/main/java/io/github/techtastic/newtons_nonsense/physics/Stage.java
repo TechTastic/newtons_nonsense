@@ -1,40 +1,24 @@
 package io.github.techtastic.newtons_nonsense.physics;
 
 import io.github.techtastic.newtons_nonsense.mixinducks.StageProvider;
+import io.github.techtastic.newtons_nonsense.physics.chunks.ChunkAggregate;
 import io.github.techtastic.newtons_nonsense.physics.pipeline.Backstage;
-import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.chunk.ChunkAccess;
-import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.chunk.storage.SerializableChunkData;
 import org.jetbrains.annotations.Nullable;
-import org.lwjgl.system.MemoryStack;
-import physx.geometry.PxBoxGeometry;
 import physx.physics.*;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 
 public class Stage {
-    public final PxScene scene;
-    public PxRigidStatic ground = Backstage.createEmptyStageGround();
-    public HashMap<BlockPos, PxShape> groundShapes = new HashMap<>();
-    public final ArrayList<PxActor> actors;
+    public final PxScene scene = Backstage.createEmptyScene();
+    public final ArrayList<PxActor> actors = new ArrayList<>();
+    public final HashMap<ChunkPos, ChunkAggregate> chunkAggregates = new HashMap<>();
     private boolean simulate = false;
-
-    public Stage(ArrayList<PxActor> actors) {
-        this.scene = Backstage.createEmptyScene();
-        this.scene.addActor(this.ground);
-        this.actors = actors;
-
-        this.actors.forEach(this.scene::addActor);
-    }
-
-    public Stage() {
-        this(new ArrayList<>());
-    }
 
     public static Stage getOrCreateStage(ServerLevel level) {
         return ((StageProvider) level).newtons_nonsense$getOrCreateStage();
@@ -53,51 +37,12 @@ public class Stage {
     }
 
     public static void onChunkLoad(ChunkAccess chunk, @Nullable ServerLevel level, SerializableChunkData data) {
-        if (level == null) {
-            return;
-        }
+        if (level == null) return;
 
         Stage stage = Stage.getOrCreateStage(level);
-
-        // Loop over sections that could contain blocks
-        for (int s = chunk.getMinSectionY(); s <= chunk.getHighestFilledSectionIndex(); s++) {
-            // Ignore empty sections
-            if (chunk.isSectionEmpty(s))
-                continue;
-
-            // Loop over Blocks in Section
-            LevelChunkSection section = chunk.getSection(chunk.getSectionIndexFromSectionY(s));
-            for (int x = 0; x < LevelChunkSection.SECTION_WIDTH; x++) {
-                for (int y = 0; y < LevelChunkSection.SECTION_HEIGHT; y++) {
-                    for (int z = 0; z < LevelChunkSection.SECTION_WIDTH; z++) {
-                        BlockState state = section.getBlockState(x, y, z);
-                        // Ignore Air
-                        if (state.isAir())
-                            continue;
-
-                        BlockPos truePos = chunk.getPos().getBlockAt(x, s * LevelChunkSection.SECTION_HEIGHT + y, z);
-
-                        // Ill make a VoxelShape to PxShape later...
-
-                        PxBoxGeometry boxGeometry = Backstage.createBoxGeometry(.5f, .5f, .5f);
-                        PxShape boxShape = Backstage.createShape(
-                                boxGeometry,
-                                (float) truePos.getCenter().x,
-                                (float) truePos.getCenter().y,
-                                (float) truePos.getCenter().z,
-                                Backstage.defaultMaterial
-                        );
-                        boxShape.setContactOffset(1.5f);
-                        boxShape.setRestOffset(1f);
-
-                        // Adjust Material here
-
-                        stage.ground.attachShape(boxShape);
-                        stage.groundShapes.put(truePos, boxShape);
-                    }
-                }
-            }
-        }
+        ChunkAggregate chunkAgg = Backstage.createChunkAggregate(chunk);
+        stage.scene.addAggregate(chunkAgg.aggregate());
+        stage.chunkAggregates.put(chunk.getPos(), chunkAgg);
     }
 
     public void addActor(PxActor actor) {
@@ -139,33 +84,6 @@ public class Stage {
                         0, 0, 0, 0, 0
                 );
             }
-        });
-
-        if (this.ground != null)
-            level.sendParticles(
-                    ParticleTypes.HAPPY_VILLAGER,
-                    this.ground.getGlobalPose().getP().getX(),
-                    this.ground.getGlobalPose().getP().getY(),
-                    this.ground.getGlobalPose().getP().getZ(),
-                    0, 0, 0, 0, 0
-            );
-
-        this.groundShapes.forEach((pos, shape) -> {
-            /*level.sendParticles(
-                    ParticleTypes.CLOUD,
-                    pos.getX(),
-                    pos.getY(),
-                    pos.getZ(),
-                    0, 0, 0, 0, 0
-            );*/
-
-            level.sendParticles(
-                    ParticleTypes.BUBBLE,
-                    shape.getLocalPose().getP().getX(),
-                    shape.getLocalPose().getP().getY(),
-                    shape.getLocalPose().getP().getZ(),
-                    0, 0, 0, 0, 0
-            );
         });
     }
 

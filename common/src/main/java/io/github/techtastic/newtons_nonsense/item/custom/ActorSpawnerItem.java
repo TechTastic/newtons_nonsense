@@ -27,7 +27,7 @@ public class ActorSpawnerItem extends Item {
             return InteractionResult.SUCCESS;
 
         Vec3 pos = useOnContext.getClickedPos().relative(useOnContext.getClickedFace()).getCenter();
-        PxRigidDynamic box = Backstage.createDefaultBox((float) pos.x, (float) pos.y, (float) pos.z);
+        PxRigidDynamic box = Backstage.createDynamicBox((float) pos.x, (float) pos.y, (float) pos.z);
         Stage.getOrCreateStage(sLevel).addActor(box);
 
         return InteractionResult.SUCCESS;

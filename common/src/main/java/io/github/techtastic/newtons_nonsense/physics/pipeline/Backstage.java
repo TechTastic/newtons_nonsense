@@ -1,27 +1,24 @@
 package io.github.techtastic.newtons_nonsense.physics.pipeline;
 
 import io.github.techtastic.newtons_nonsense.physics.Stage;
+import io.github.techtastic.newtons_nonsense.physics.chunks.ChunkAggregate;
+import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.chunk.ChunkAccess;
+import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.phys.Vec3;
 import org.lwjgl.system.MemoryStack;
 import physx.PxTopLevelFunctions;
 import physx.common.*;
 import physx.cooking.PxCookingParams;
-import physx.cooking.PxTriangleMeshDesc;
-import physx.extensions.PxRigidBodyExt;
-import physx.extensions.PxSerialization;
-import physx.extensions.PxSerializationRegistry;
+import physx.extensions.*;
 import physx.geometry.PxBoxGeometry;
-import physx.geometry.PxGeometry;
-import physx.geometry.PxTriangleMesh;
 import physx.physics.*;
-import physx.support.PxArray_PxU32;
-import physx.support.PxArray_PxVec3;
 import physx.vehicle2.PxVehicleTopLevelFunctions;
 
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Locale;
 import java.util.Map;
 
 
@@ -90,143 +87,143 @@ public class Backstage {
         }
     }
 
-    public static PxRigidDynamic createDefaultBox(float posX, float posY, float posZ) {
-        return createDefaultBox(posX, posY, posZ, defaultFilterData);
+    public static PxRigidDynamic createDynamicBox(float globalX, float globalY, float globalZ) {
+        PxShape shape = createBoxShape(.5f, .5f, .5f, 0, 0, 0, defaultMaterial);
+        return createDynamicBodyWithShapes(globalX, globalY, globalZ, shape);
     }
 
-    public static PxRigidDynamic createDefaultBox(float posX, float posY, float posZ, PxFilterData simFilterData) {
+    public static PxRigidStatic createStaticBodyWithShapes(float globalX, float globalY, float globalZ, PxShape... shapes) {
         try (MemoryStack mem = MemoryStack.stackPush()) {
-            PxTransform pose = PxTransform.createAt(mem, MemoryStack::nmalloc, PxIDENTITYEnum.PxIdentity);
-            PxShape shape = createDefaultBoxShape(posX, posY, posZ, pose);
-            PxRigidDynamic body = physics.createRigidDynamic(pose);
-            shape.setSimulationFilterData(simFilterData);
-            body.attachShape(shape);
-            shape.release();
-            PxRigidBodyExt.setMassAndUpdateInertia(body, 1f);
-            return body;
-        }
-    }
-
-    public static PxShape createDefaultBoxShape(float posX, float posY, float posZ) {
-        try (MemoryStack mem = MemoryStack.stackPush()) {
-            return createDefaultBoxShape(posX, posY, posZ, PxTransform.createAt(mem, MemoryStack::nmalloc, PxIDENTITYEnum.PxIdentity));
-        }
-    }
-
-    public static PxShape createDefaultBoxShape(float posX, float posY, float posZ, PxTransform pose) {
-        try (MemoryStack mem = MemoryStack.stackPush()) {
-            PxBoxGeometry box = createBoxGeometry(0.5f, 0.5f, 0.5f);
-            pose.setP(PxVec3.createAt(mem, MemoryStack::nmalloc, posX, posY, posZ));
-            PxShapeFlags shapeFlags = PxShapeFlags.createAt(mem, MemoryStack::nmalloc, (byte) (PxShapeFlagEnum.eSCENE_QUERY_SHAPE.value | PxShapeFlagEnum.eSIMULATION_SHAPE.value));
-            PxShape shape = physics.createShape(box, defaultMaterial, true, shapeFlags);
-            shape.setLocalPose(pose);
-            shape.setSimulationFilterData(Backstage.defaultFilterData);
-            return shape;
-        }
-    }
-
-    public static PxShape createShape(PxGeometry geometry, float offsetX, float offsetY, float offsetZ, PxMaterial material) {
-        try (MemoryStack mem = MemoryStack.stackPush()) {
-            PxShapeFlags shapeFlags = PxShapeFlags.createAt(mem, MemoryStack::nmalloc,
-                    (byte) (PxShapeFlagEnum.eSCENE_QUERY_SHAPE.value | PxShapeFlagEnum.eSIMULATION_SHAPE.value));
-            PxShape shape = physics.createShape(geometry, material, true, shapeFlags);
-
-            PxTransform pose = PxTransform.createAt(mem, MemoryStack::nmalloc, PxIDENTITYEnum.PxIdentity);
-            pose.setP(PxVec3.createAt(mem, MemoryStack::nmalloc, offsetX, offsetY, offsetZ));
-
-            shape.setLocalPose(pose);
-            shape.setSimulationFilterData(Backstage.defaultFilterData);
-
-            return shape;
-        }
-    }
-
-    public static PxBoxGeometry createBoxGeometry(float lenX, float lenY, float lenZ) {
-        try (MemoryStack mem = MemoryStack.stackPush()) {
-            return PxBoxGeometry.createAt(mem, MemoryStack::nmalloc, lenX, lenY, lenZ);
-        }
-    }
-
-    public static PxRigidStatic createStaticBody(PxGeometry fromGeometry, float posX, float posY, float posZ) {
-        PxShape shape = physics.createShape(fromGeometry, defaultMaterial, true);
-        shape.setSimulationFilterData(defaultFilterData);
-        return createStaticBody(shape, posX, posY, posZ);
-    }
-
-    public static PxRigidStatic createStaticBody(PxShape fromShape, float posX, float posY, float posZ) {
-        try (MemoryStack mem = MemoryStack.stackPush()) {
-            PxTransform pose = PxTransform.createAt(mem, MemoryStack::nmalloc, PxIDENTITYEnum.PxIdentity);
-            pose.setP(PxVec3.createAt(mem, MemoryStack::nmalloc, posX, posY, posZ));
+            PxVec3 globalPos = PxVec3.createAt(mem, MemoryStack::nmalloc, globalX, globalY, globalZ);
+            PxTransform pose = PxTransform.createAt(mem, MemoryStack::nmalloc, globalPos);
             PxRigidStatic body = physics.createRigidStatic(pose);
-            body.attachShape(fromShape);
+            for (PxShape shape : shapes) {
+                body.attachShape(shape);
+            }
             return body;
         }
     }
 
-    public static PxRigidStatic createEmptyStageGround() {
+    public static PxRigidDynamic createDynamicBodyWithShapes(float globalX, float globalY, float globalZ, PxShape... shapes) {
         try (MemoryStack mem = MemoryStack.stackPush()) {
-            PxTransform pose = PxTransform.createAt(mem, MemoryStack::nmalloc, PxIDENTITYEnum.PxIdentity);
-            pose.setP(PxVec3.createAt(mem, MemoryStack::nmalloc, 0, 0, 0));
-            return physics.createRigidStatic(pose);
+            PxVec3 globalPos = PxVec3.createAt(mem, MemoryStack::nmalloc, globalX, globalY, globalZ);
+            PxTransform pose = PxTransform.createAt(mem, MemoryStack::nmalloc, globalPos);
+            PxRigidDynamic body = physics.createRigidDynamic(pose);
+            for (PxShape shape : shapes) {
+                body.attachShape(shape);
+            }
+            return body;
         }
     }
 
-    public static PxTriangleMesh createTriangleMesh(Vec3[] points) {
+    public static PxShape createBoxShape(float lenX, float lenY, float lenZ, float offsetX, float offsetY, float offsetZ, PxMaterial material) {
         try (MemoryStack mem = MemoryStack.stackPush()) {
-            PxArray_PxVec3 pointVector = new PxArray_PxVec3();
-            PxArray_PxU32 indexVector = new PxArray_PxU32();
-            PxVec3 tmpVec = PxVec3.createAt(mem, MemoryStack::nmalloc, 0f, 0f, 0f);
-            for (int i = 0; i < points.length; i++) {
-                Vec3 point = points[i];
-                tmpVec.setX((float) point.x);
-                tmpVec.setY((float) point.y);
-                tmpVec.setZ((float) point.z);
-                pointVector.pushBack(tmpVec);
-                if (i > 0) {
-                    indexVector.pushBack(0);
-                    indexVector.pushBack(i);
-                    indexVector.pushBack(i + 1);
+            PxBoxGeometry geo = PxBoxGeometry.createAt(mem, MemoryStack::nmalloc, lenX, lenY, lenZ);
+            PxVec3 offset = PxVec3.createAt(mem, MemoryStack::nmalloc, offsetX, offsetY, offsetZ);
+            PxTransform pose = PxTransform.createAt(mem, MemoryStack::nmalloc, offset);
+            PxShapeFlags shapeFlags = new PxShapeFlags((byte) (PxShapeFlagEnum.eSIMULATION_SHAPE.value | PxShapeFlagEnum.eSCENE_QUERY_SHAPE.value));
+            PxShape shape = physics.createShape(geo, material, false, shapeFlags);
+            shape.setLocalPose(pose);
+            return shape;
+        }
+    }
+
+    public static ChunkAggregate createChunkAggregate(ChunkAccess chunk) {
+        int maxBlocksInChunk = LevelChunkSection.SECTION_WIDTH * LevelChunkSection.SECTION_WIDTH * (Math.abs(chunk.getMinY()) + Math.abs(chunk.getMaxY()));
+        ChunkAggregate agg = new ChunkAggregate(
+                physics.createAggregate(maxBlocksInChunk, maxBlocksInChunk, false),
+                new HashMap<>()
+        );
+
+        // Loop over sections that could contain blocks
+        for (int s = chunk.getMinSectionY(); s <= chunk.getHighestFilledSectionIndex(); s++) {
+            // Ignore empty sections
+            if (chunk.isSectionEmpty(s))
+                continue;
+
+            // Loop over Blocks in Section
+            LevelChunkSection section = chunk.getSection(chunk.getSectionIndexFromSectionY(s));
+            for (int x = 0; x < LevelChunkSection.SECTION_WIDTH; x++) {
+                for (int y = 0; y < LevelChunkSection.SECTION_HEIGHT; y++) {
+                    for (int z = 0; z < LevelChunkSection.SECTION_WIDTH; z++) {
+                        BlockState state = section.getBlockState(x, y, z);
+                        // Ignore Air
+                        if (state.isAir())
+                            continue;
+
+                        BlockPos truePos = chunk.getPos().getBlockAt(x, s * LevelChunkSection.SECTION_HEIGHT + y, z);
+
+                        // Ill make a VoxelShape to PxShape later...
+                        PxShape shape = createBoxShape(
+                                .5f,
+                                .5f,
+                                .5f,
+                                0,
+                                0,
+                                0,
+                                defaultMaterial
+                        );
+
+                        // Adjust Material here
+
+                        PxRigidStatic body = createStaticBodyWithShapes(
+                                (float) truePos.getCenter().x,
+                                (float) truePos.getCenter().y,
+                                (float) truePos.getCenter().z,
+                                shape
+                        );
+
+                        agg.addBlock(truePos, body);
+                    }
                 }
             }
-
-            // create mesh descriptor
-            PxBoundedData pointsData = PxBoundedData.createAt(mem, MemoryStack::nmalloc);
-            pointsData.setCount(pointVector.size());
-            pointsData.setStride(PxVec3.SIZEOF);
-            pointsData.setData(pointVector.begin());
-
-            PxBoundedData triangles = PxBoundedData.createAt(mem, MemoryStack::nmalloc);
-            triangles.setCount(indexVector.size() / 3);
-            triangles.setStride(4 * 3);     // 3 4-byte integer indices per triangle
-            triangles.setData(indexVector.begin());
-
-            PxTriangleMeshDesc desc = PxTriangleMeshDesc.createAt(mem, MemoryStack::nmalloc);
-            desc.setPoints(pointsData);
-            desc.setTriangles(triangles);
-
-            // cook mesh and delete input data afterwards (no need to keep them around anymore)
-            PxTriangleMesh mesh = PxTopLevelFunctions.CreateTriangleMesh(Backstage.cookingParams, desc);
-
-            pointVector.destroy();
-            indexVector.destroy();
-
-            return mesh;
         }
+
+        return agg;
     }
 
-    public static void debugSimulateScene(PxScene scene, float duration, PxRigidActor printActor) {
-        float step = 1/60f;
-        float t = 0;
-        for (int i = 0; i < duration / step; i++) {
-            // print position of printActor 2 times per simulated sec
-            if (printActor != null && i % 30 == 0) {
-                PxVec3 pos = printActor.getGlobalPose().getP();
-                System.out.printf(Locale.ENGLISH, "t = %.2f s, pos(%6.3f, %6.3f, %6.3f)\n", t, pos.getX(), pos.getY(), pos.getZ());
+    public static PxRigidStatic createChunkBody(ChunkAccess chunk) {
+        ArrayList<PxShape> shapes = new ArrayList<>();
+
+        // Loop over sections that could contain blocks
+        for (int s = chunk.getMinSectionY(); s <= chunk.getHighestFilledSectionIndex(); s++) {
+            // Ignore empty sections
+            if (chunk.isSectionEmpty(s))
+                continue;
+
+            // Loop over Blocks in Section
+            LevelChunkSection section = chunk.getSection(chunk.getSectionIndexFromSectionY(s));
+            for (int x = 0; x < LevelChunkSection.SECTION_WIDTH; x++) {
+                for (int y = 0; y < LevelChunkSection.SECTION_HEIGHT; y++) {
+                    for (int z = 0; z < LevelChunkSection.SECTION_WIDTH; z++) {
+                        BlockState state = section.getBlockState(x, y, z);
+                        // Ignore Air
+                        if (state.isAir())
+                            continue;
+
+                        BlockPos truePos = chunk.getPos().getBlockAt(x, s * LevelChunkSection.SECTION_HEIGHT + y, z);
+
+                        // Ill make a VoxelShape to PxShape later...
+                        // Adjust Material here
+
+                        shapes.add(createBoxShape(
+                                .5f,
+                                .5f,
+                                .5f,
+                                (float) truePos.getCenter().x,
+                                (float) truePos.getCenter().y,
+                                (float) truePos.getCenter().z,
+                                defaultMaterial
+                        ));
+                    }
+                }
             }
-            scene.simulate(step);
-            scene.fetchResults(true);
-            t += step;
         }
+
+        if (shapes.isEmpty()) return null;
+
+        BlockPos chunkPos = chunk.getPos().getWorldPosition();
+        return createStaticBodyWithShapes(chunkPos.getX(), shapes.getFirst().getLocalPose().getP().getY(), chunkPos.getZ(), shapes.toArray(new PxShape[]{}));
     }
 
     static {
