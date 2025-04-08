@@ -1,8 +1,10 @@
 package io.github.techtastic.newtons_nonsense.fabric;
 
+import io.github.techtastic.newtons_nonsense.registry.physics.materials.PhysicsMaterialRegistry;
 import net.fabricmc.api.ModInitializer;
 
 import io.github.techtastic.newtons_nonsense.NewtonsNonsense;
+import net.fabricmc.fabric.api.event.registry.DynamicRegistries;
 
 public final class NewtonsNonsenseFabric implements ModInitializer {
     @Override
@@ -13,5 +15,11 @@ public final class NewtonsNonsenseFabric implements ModInitializer {
 
         // Run our common setup.
         NewtonsNonsense.init();
+
+        DynamicRegistries.registerSynced(
+                PhysicsMaterialRegistry.MATERIAL_REGISTRY_KEY,
+                PhysicsMaterialRegistry.MATERIAL_CODEC,
+                PhysicsMaterialRegistry.MATERIAL_CODEC
+        );
     }
 }

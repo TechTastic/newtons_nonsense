@@ -1,0 +1,5 @@
+{
+  "staticFriction": 0.3,
+  "dynamicFriction": 0.15,
+  "restitution": 0.2
+}
