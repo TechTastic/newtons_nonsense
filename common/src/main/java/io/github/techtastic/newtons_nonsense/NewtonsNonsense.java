@@ -3,6 +3,7 @@ package io.github.techtastic.newtons_nonsense;
 import dev.architectury.event.events.common.*;
 import dev.architectury.registry.registries.DeferredRegister;
 import dev.architectury.registry.registries.RegistrySupplier;
+import io.github.techtastic.newtons_nonsense.commands.NNCommands;
 import io.github.techtastic.newtons_nonsense.item.custom.ActorSpawnerItem;
 import io.github.techtastic.newtons_nonsense.physics.Stage;
 import io.github.techtastic.newtons_nonsense.physics.pipeline.Backstage;
@@ -35,6 +36,8 @@ public final class NewtonsNonsense {
         TickEvent.SERVER_LEVEL_POST.register(Stage::onServerLevelPostTick);
 
         ChunkEvent.LOAD_DATA.register(Stage::onChunkLoad);
+
+        CommandRegistrationEvent.EVENT.register(NNCommands::register);
 
         // Debug Stuff
 
