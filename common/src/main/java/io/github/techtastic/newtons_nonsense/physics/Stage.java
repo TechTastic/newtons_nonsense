@@ -169,8 +169,8 @@ public class Stage {
     }
 
     public void free() {
-        this.actors.forEach(PxActor::release);
         this.actors.clear();
+        this.chunkBodies.clear();
         this.scene.release();
     }
 }

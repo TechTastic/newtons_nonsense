@@ -39,7 +39,7 @@ There are a few commands I will create for debugging
 - [ ] Setup `Stage` and attach it to `ServerLevel`
   - [X] Properly handle ground mesh per level
   - [ ] Properly handle creating, updating, and deleting Mimics
-  - [ ] Properly handle chunk loading, unloading
+  - [X] Properly handle chunk loading, unloading
   - [X] Properly handle server level ticking, server level loading, server level unloading
 - [ ] Setup `Mimic`s
   - [ ] Properly handle rendering `Mimic`s (packets and rendering shenanigans)

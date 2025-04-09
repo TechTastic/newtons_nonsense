@@ -1,6 +1,5 @@
 package io.github.techtastic.newtons_nonsense.fabric;
 
-import dev.architectury.event.events.common.CommandRegistrationEvent;
 import io.github.techtastic.newtons_nonsense.physics.Stage;
 import io.github.techtastic.newtons_nonsense.registry.physics.materials.PhysicsMaterialRegistry;
 import net.fabricmc.api.ModInitializer;

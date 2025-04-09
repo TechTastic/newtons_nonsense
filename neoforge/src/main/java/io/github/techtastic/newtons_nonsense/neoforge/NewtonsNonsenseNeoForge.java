@@ -5,7 +5,6 @@ import io.github.techtastic.newtons_nonsense.neoforge.registry.NeoForgeNNRegistr
 import io.github.techtastic.newtons_nonsense.physics.Stage;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.LevelAccessor;
-import net.minecraft.world.level.ServerLevelAccessor;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
