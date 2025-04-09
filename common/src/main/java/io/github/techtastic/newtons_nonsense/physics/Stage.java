@@ -33,7 +33,7 @@ public class Stage {
     }
 
     public static void onServerLevelPostTick(ServerLevel level) {
-        Stage.getOrCreateStage(level).step(level, 1f/20f);
+        Stage.getOrCreateStage(level).tryAndStep(level, 1f/20f);
     }
 
     public static void onChunkLoad(ChunkAccess chunk, @Nullable ServerLevel level, SerializableChunkData data) {
@@ -66,11 +66,15 @@ public class Stage {
         this.simulate = simulate;
     }
 
-    public void step(ServerLevel level, float dt) {
+    public void tryAndStep(ServerLevel level, float dt) {
         if (!this.simulate) {
             return;
         }
 
+        step(level, dt);
+    }
+
+    public void step(ServerLevel level, float dt) {
         this.scene.simulate(dt);
         this.scene.fetchResults(true);
 
