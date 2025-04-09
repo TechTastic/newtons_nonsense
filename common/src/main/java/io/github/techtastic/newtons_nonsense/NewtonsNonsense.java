@@ -22,7 +22,7 @@ public final class NewtonsNonsense {
         LifecycleEvent.SERVER_LEVEL_UNLOAD.register(Stage::onServerLevelUnload);
         TickEvent.SERVER_LEVEL_POST.register(Stage::onServerLevelPostTick);
 
-        //ChunkEvent.LOAD_DATA.register(Stage::onChunkLoad);
+        ChunkEvent.LOAD_DATA.register(Stage::onChunkLoad);
 
         CommandRegistrationEvent.EVENT.register(NNCommands::register);
     }
