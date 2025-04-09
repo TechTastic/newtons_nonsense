@@ -23,6 +23,8 @@ public final class NewtonsNonsense {
         TickEvent.SERVER_LEVEL_POST.register(Stage::onServerLevelPostTick);
 
         ChunkEvent.LOAD_DATA.register(Stage::onChunkLoad);
+        BlockEvent.BREAK.register(Stage::onBlockBreak);
+        BlockEvent.PLACE.register(Stage::onBlockPlace);
 
         CommandRegistrationEvent.EVENT.register(NNCommands::register);
     }

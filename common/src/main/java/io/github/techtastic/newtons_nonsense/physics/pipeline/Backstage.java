@@ -1,16 +1,15 @@
 package io.github.techtastic.newtons_nonsense.physics.pipeline;
 
 import io.github.techtastic.newtons_nonsense.physics.Stage;
-import io.github.techtastic.newtons_nonsense.physics.chunks.ChunkAggregate;
 import io.github.techtastic.newtons_nonsense.registry.physics.materials.PhysicsMaterialRegistry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Registry;
-import net.minecraft.core.RegistryAccess;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.LevelChunkSection;
-import net.minecraft.world.phys.Vec3;
+import org.jetbrains.annotations.NotNull;
 import org.lwjgl.system.MemoryStack;
 import physx.PxTopLevelFunctions;
 import physx.common.*;
@@ -131,63 +130,10 @@ public class Backstage {
         }
     }
 
-    public static ChunkAggregate createChunkAggregate(ChunkAccess chunk, RegistryAccess access) {
-        Registry<PxMaterial> materialRegistry = access.lookupOrThrow(PhysicsMaterialRegistry.MATERIAL_REGISTRY_KEY);
-        int maxBlocksInChunk = LevelChunkSection.SECTION_WIDTH * LevelChunkSection.SECTION_WIDTH * (Math.abs(chunk.getMinY()) + Math.abs(chunk.getMaxY()));
-        ChunkAggregate agg = new ChunkAggregate(
-                physics.createAggregate(maxBlocksInChunk, maxBlocksInChunk, false),
-                new HashMap<>()
-        );
+    public static PxShape[] getChunkAsShapes(ChunkAccess chunk, @NotNull ServerLevel level) {
+        Registry<PxMaterial> materialRegistry = level.registryAccess().lookupOrThrow(PhysicsMaterialRegistry.MATERIAL_REGISTRY_KEY);
+        PxMaterial defaultMaterial = materialRegistry.getValueOrThrow(PhysicsMaterialRegistry.DEFAULT_MATERIAL);
 
-        // Loop over sections that could contain blocks
-        for (int s = chunk.getMinSectionY(); s <= chunk.getHighestFilledSectionIndex(); s++) {
-            // Ignore empty sections
-            if (chunk.isSectionEmpty(s))
-                continue;
-
-            // Loop over Blocks in Section
-            LevelChunkSection section = chunk.getSection(chunk.getSectionIndexFromSectionY(s));
-            for (int x = 0; x < LevelChunkSection.SECTION_WIDTH; x++) {
-                for (int y = 0; y < LevelChunkSection.SECTION_HEIGHT; y++) {
-                    for (int z = 0; z < LevelChunkSection.SECTION_WIDTH; z++) {
-                        BlockState state = section.getBlockState(x, y, z);
-                        // Ignore Air
-                        if (state.isAir())
-                            continue;
-
-                        BlockPos truePos = chunk.getPos().getBlockAt(x, s * LevelChunkSection.SECTION_HEIGHT + y, z);
-
-                        // Ill make a VoxelShape to PxShape later...
-                        PxShape shape = createBoxShape(
-                                .5f,
-                                .5f,
-                                .5f,
-                                0,
-                                0,
-                                0,
-                                materialRegistry.get(PhysicsMaterialRegistry.DEFAULT_MATERIAL).get().value()
-                        );
-
-                        // Adjust Material here
-
-                        PxRigidStatic body = createStaticBodyWithShapes(
-                                (float) truePos.getCenter().x,
-                                (float) truePos.getCenter().y,
-                                (float) truePos.getCenter().z,
-                                shape
-                        );
-
-                        agg.addBlock(truePos, body);
-                    }
-                }
-            }
-        }
-
-        return agg;
-    }
-
-    public static PxRigidStatic createChunkBody(ChunkAccess chunk, RegistryAccess access) {
-        Registry<PxMaterial> materialRegistry = access.lookupOrThrow(PhysicsMaterialRegistry.MATERIAL_REGISTRY_KEY);
         ArrayList<PxShape> shapes = new ArrayList<>();
 
         // Loop over sections that could contain blocks
@@ -208,27 +154,26 @@ public class Backstage {
 
                         BlockPos truePos = chunk.getPos().getBlockAt(x, s * LevelChunkSection.SECTION_HEIGHT + y, z);
 
-                        // Ill make a VoxelShape to PxShape later...
+                        // I'll make a VoxelShape to PxShape later...
                         // Adjust Material here
 
-                        shapes.add(createBoxShape(
+                        PxShape shape = Backstage.createBoxShape(
                                 .5f,
                                 .5f,
                                 .5f,
-                                (float) truePos.getCenter().x,
+                                (float) (truePos.getCenter().x - chunk.getPos().x),
                                 (float) truePos.getCenter().y,
-                                (float) truePos.getCenter().z,
-                                materialRegistry.get(PhysicsMaterialRegistry.DEFAULT_MATERIAL).get().value()
-                        ));
+                                (float) (truePos.getCenter().z - chunk.getPos().z),
+                                defaultMaterial
+                        );
+
+                        shapes.addLast(shape);
                     }
                 }
             }
         }
 
-        if (shapes.isEmpty()) return null;
-
-        BlockPos chunkPos = chunk.getPos().getWorldPosition();
-        return createStaticBodyWithShapes(chunkPos.getX(), shapes.getFirst().getLocalPose().getP().getY(), chunkPos.getZ(), shapes.toArray(new PxShape[]{}));
+        return shapes.toArray(new PxShape[0]);
     }
 
     static {
