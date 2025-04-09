@@ -119,7 +119,7 @@ public class NNCommands {
 
         dispatcher.register(Commands.literal("step_simulation")
                 .requires(source -> source.hasPermission(2))
-                .then(Commands.argument("step", FloatArgumentType.floatArg(1/60f, 1))
+                .then(Commands.argument("step", FloatArgumentType.floatArg(0, 100))
                         .executes(context -> {
                             float step = FloatArgumentType.getFloat(context, "step");
                             Stage.getOrCreateStage(context.getSource().getLevel()).step(context.getSource().getLevel(), step);
