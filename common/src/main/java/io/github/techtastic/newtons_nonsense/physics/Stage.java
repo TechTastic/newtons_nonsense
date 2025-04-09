@@ -67,17 +67,6 @@ public class Stage {
     }
 
     public void tryAndStep(ServerLevel level, float dt) {
-        if (!this.simulate) {
-            return;
-        }
-
-        step(level, dt);
-    }
-
-    public void step(ServerLevel level, float dt) {
-        this.scene.simulate(dt);
-        this.scene.fetchResults(true);
-
         this.actors.forEach((actor) -> {
             if (actor instanceof PxRigidDynamic rigid) {
                 level.sendParticles(
@@ -89,6 +78,17 @@ public class Stage {
                 );
             }
         });
+
+        if (!this.simulate) {
+            return;
+        }
+
+        step(level, dt);
+    }
+
+    public void step(ServerLevel level, float dt) {
+        this.scene.simulate(dt);
+        this.scene.fetchResults(true);
     }
 
     public void free() {
