@@ -126,14 +126,16 @@ public class Stage {
         this.chunkBodies.put(pos, actor);
     }
 
-    public void removeChunk(ChunkPos pos, PxRigidStatic actor) {
-        if (actor.getScene() == this.scene)
+    public PxRigidStatic removeChunk(ChunkPos pos) {
+        PxRigidStatic actor = this.chunkBodies.remove(pos);
+
+        if (actor != null && actor.getScene() == this.scene)
             this.scene.removeActor(actor);
-        this.chunkBodies.remove(pos);
+        return actor;
     }
 
-    public void removeAndFreeChunk(ChunkPos pos, PxRigidStatic actor) {
-        removeChunk(pos, actor);
+    public void removeAndFreeChunk(ChunkPos pos) {
+        PxRigidStatic actor = removeChunk(pos);
         actor.release();
     }
 
