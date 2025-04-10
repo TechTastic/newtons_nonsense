@@ -15,7 +15,9 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
+import net.minecraft.world.level.chunk.PalettedContainer;
 import net.minecraft.world.level.chunk.storage.SerializableChunkData;
+import net.minecraft.world.level.levelgen.Heightmap;
 import org.jetbrains.annotations.Nullable;
 import physx.physics.*;
 import physx.support.SupportFunctions;
@@ -28,6 +30,9 @@ public class Stage {
     public final ArrayList<PxActor> actors = new ArrayList<>();
     public final HashMap<ChunkPos, PxRigidStatic> chunkBodies = new HashMap<>();
     private boolean simulate = false;
+
+    public Stage() {
+    }
 
     public static Stage getOrCreateStage(ServerLevel level) {
         return ((StageProvider) level).newtons_nonsense$getOrCreateStage();
@@ -45,12 +50,16 @@ public class Stage {
         Stage.getOrCreateStage(level).tryAndStep(level, 1f/20f);
     }
 
-    public static void onChunkLoad(ChunkAccess chunk, @Nullable ServerLevel level, SerializableChunkData data) {
+    public static void onChunkLoad(ChunkAccess chunk, @Nullable ServerLevel level) {
         if (level == null) return;
 
-        PxShape[] shapes = Backstage.getChunkAsShapes(chunk, level);
-        PxRigidStatic chunkBody = Backstage.createStaticBodyWithShapes(chunk.getPos().x, 0, chunk.getPos().z, shapes);
-        Stage.getOrCreateStage(level).addChunk(chunk.getPos(), chunkBody);
+        Stage stage = Stage.getOrCreateStage(level);
+        stage.chunkBodies.computeIfAbsent(chunk.getPos(), (chunkPos) -> {
+            PxShape[] shapes = Backstage.getChunkAsShapes(chunk, level);
+            PxRigidStatic chunkBody = Backstage.createStaticBodyWithShapes(chunk.getPos().x, 0, chunk.getPos().z, shapes);
+            stage.scene.addActor(chunkBody);
+            return chunkBody;
+        });
     }
 
     public static EventResult onBlockBreak(Level level, BlockPos pos, BlockState state, ServerPlayer player, @Nullable IntValue xp) {

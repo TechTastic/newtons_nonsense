@@ -47,6 +47,10 @@ public class PhysxUtils {
 
 
 
+    public static Quaterniondc toQuat(PxQuat quat) {
+        return new Quaterniond(quat.getX(), quat.getY(), quat.getZ(), quat.getW());
+    }
+
     public static PxQuat toPxQuat(double x, double y, double z, double w) {
         try (MemoryStack mem = MemoryStack.stackPush()) {
             return PxQuat.createAt(mem, MemoryStack::nmalloc, (float) x, (float) y, (float) z, (float) w);

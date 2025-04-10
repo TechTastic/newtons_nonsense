@@ -24,6 +24,6 @@ public class PhysicsMaterialRegistry {
                 Codec.FLOAT.fieldOf("staticFriction").forGetter(PxMaterial::getStaticFriction),
                 Codec.FLOAT.fieldOf("dynamicFriction").forGetter(PxMaterial::getDynamicFriction),
                 Codec.FLOAT.fieldOf("restitution").forGetter(PxMaterial::getRestitution)
-        ).apply(instance, Backstage.physics::createMaterial));
+        ).apply(instance, Backstage::createMaterial));
     }
 }

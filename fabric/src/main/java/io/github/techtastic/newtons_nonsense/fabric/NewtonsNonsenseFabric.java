@@ -24,7 +24,7 @@ public final class NewtonsNonsenseFabric implements ModInitializer {
                 PhysicsMaterialRegistry.MATERIAL_CODEC
         );
 
-        ServerChunkEvents.CHUNK_LOAD.register((level, chunk) -> Stage.onChunkLoad(chunk, level, null));
-        ServerChunkEvents.CHUNK_UNLOAD.register((level, chunk) -> Stage.getOrCreateStage(level).removeAndFreeChunk(chunk.getPos()));
+        ServerChunkEvents.CHUNK_LOAD.register((level, chunk) -> Stage.onChunkLoad(chunk, level));
+        //ServerChunkEvents.CHUNK_UNLOAD.register((level, chunk) -> Stage.getOrCreateStage(level).removeAndFreeChunk(chunk.getPos()));
     }
 }

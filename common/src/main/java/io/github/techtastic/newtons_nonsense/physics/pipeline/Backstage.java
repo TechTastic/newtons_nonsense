@@ -15,7 +15,7 @@ import physx.PxTopLevelFunctions;
 import physx.common.*;
 import physx.cooking.PxCookingParams;
 import physx.extensions.*;
-import physx.geometry.PxBoxGeometry;
+import physx.geometry.*;
 import physx.physics.*;
 import physx.vehicle2.PxVehicleTopLevelFunctions;
 
@@ -26,15 +26,12 @@ import java.util.Map;
 
 public class Backstage {
     public static final int PX_PHYSICS_VERSION = PxTopLevelFunctions.getPHYSICS_VERSION();
-
-    public static final PxFoundation foundation;
-    public static final PxPhysics physics;
-    public static final PxCookingParams cookingParams;
-
-    public static final PxCpuDispatcher defaultDispatcher;
-    public static final PxFilterData defaultFilterData;
-
-    public static final PxSerializationRegistry serializer;
+    private static final PxFoundation PX_FOUNDATION;
+    private static final PxPhysics PX_PHYSICS;
+    private static final PxCookingParams PX_COOKING_PARAMS;
+    private static final PxCpuDispatcher PX_DEFAULT_DISPATCHER;
+    private static final PxFilterData DEFAULT_FILTER_DATA;
+    private static final PxSerializationRegistry PX_SERIALIZATION_REGISTRY;
 
     static class CustomErrorCallback extends PxErrorCallbackImpl {
         private final Map<PxErrorCodeEnum, String> codeNames = new HashMap<>() {{
@@ -63,15 +60,15 @@ public class Backstage {
 
     public static PxScene createEmptyScene() {
         try (MemoryStack mem = MemoryStack.stackPush()) {
-            PxSceneDesc sceneDesc = PxSceneDesc.createAt(mem, MemoryStack::nmalloc, physics.getTolerancesScale());
+            PxSceneDesc sceneDesc = PxSceneDesc.createAt(mem, MemoryStack::nmalloc, PX_PHYSICS.getTolerancesScale());
             PxVec3 tempVec = PxVec3.createAt(mem, MemoryStack::nmalloc, 0f, -9.81f, 0f);
             sceneDesc.setGravity(tempVec);
-            sceneDesc.setCpuDispatcher(defaultDispatcher);
+            sceneDesc.setCpuDispatcher(PX_DEFAULT_DISPATCHER);
             sceneDesc.setFilterShader(PxTopLevelFunctions.DefaultFilterShader());
             sceneDesc.setSanityBounds(getMaxBounds());
             sceneDesc.setBroadPhaseType(PxBroadPhaseTypeEnum.eABP);
 
-            return physics.createScene(sceneDesc);
+            return PX_PHYSICS.createScene(sceneDesc);
         }
     }
 
@@ -88,6 +85,10 @@ public class Backstage {
         }
     }
 
+    public static PxMaterial createMaterial(float staticFriction, float dynamicFriction, float restitution) {
+        return PX_PHYSICS.createMaterial(staticFriction, dynamicFriction, restitution);
+    }
+
     public static PxRigidDynamic createDynamicBox(float globalX, float globalY, float globalZ, PxMaterial material) {
         PxShape shape = createBoxShape(.5f, .5f, .5f, 0, 0, 0, material);
         return createDynamicBodyWithShapes(globalX, globalY, globalZ, shape);
@@ -97,7 +98,7 @@ public class Backstage {
         try (MemoryStack mem = MemoryStack.stackPush()) {
             PxVec3 globalPos = PxVec3.createAt(mem, MemoryStack::nmalloc, globalX, globalY, globalZ);
             PxTransform pose = PxTransform.createAt(mem, MemoryStack::nmalloc, globalPos);
-            PxRigidStatic body = physics.createRigidStatic(pose);
+            PxRigidStatic body = PX_PHYSICS.createRigidStatic(pose);
             for (PxShape shape : shapes) {
                 body.attachShape(shape);
             }
@@ -109,7 +110,7 @@ public class Backstage {
         try (MemoryStack mem = MemoryStack.stackPush()) {
             PxVec3 globalPos = PxVec3.createAt(mem, MemoryStack::nmalloc, globalX, globalY, globalZ);
             PxTransform pose = PxTransform.createAt(mem, MemoryStack::nmalloc, globalPos);
-            PxRigidDynamic body = physics.createRigidDynamic(pose);
+            PxRigidDynamic body = PX_PHYSICS.createRigidDynamic(pose);
             for (PxShape shape : shapes) {
                 body.attachShape(shape);
             }
@@ -123,9 +124,9 @@ public class Backstage {
             PxVec3 offset = PxVec3.createAt(mem, MemoryStack::nmalloc, offsetX, offsetY, offsetZ);
             PxTransform pose = PxTransform.createAt(mem, MemoryStack::nmalloc, offset);
             PxShapeFlags shapeFlags = new PxShapeFlags((byte) (PxShapeFlagEnum.eSIMULATION_SHAPE.value | PxShapeFlagEnum.eSCENE_QUERY_SHAPE.value));
-            PxShape shape = physics.createShape(geo, material, false, shapeFlags);
+            PxShape shape = PX_PHYSICS.createShape(geo, material, false, shapeFlags);
             shape.setLocalPose(pose);
-            shape.setSimulationFilterData(defaultFilterData);
+            shape.setSimulationFilterData(DEFAULT_FILTER_DATA);
             return shape;
         }
     }
@@ -180,25 +181,24 @@ public class Backstage {
         // create PhysX foundation object
         PxDefaultAllocator allocator = new PxDefaultAllocator();
         PxErrorCallback errorCb = new CustomErrorCallback();
-        foundation = PxTopLevelFunctions.CreateFoundation(PX_PHYSICS_VERSION, allocator, errorCb);
+        PX_FOUNDATION = PxTopLevelFunctions.CreateFoundation(PX_PHYSICS_VERSION, allocator, errorCb);
 
         // create PhysX main physics object
         PxTolerancesScale tolerances = new PxTolerancesScale();
-        physics = PxTopLevelFunctions.CreatePhysics(PX_PHYSICS_VERSION, foundation, tolerances);
-        //defaultMaterial = physics.createMaterial(0.5f, 0.5f, 0.5f);
-        defaultFilterData = new PxFilterData(0, 0, 0, 0);
-        defaultFilterData.setWord0(1);          // collision group: 0 (i.e. 1 << 0)
-        defaultFilterData.setWord1(0xffffffff); // collision mask: collide with everything
-        defaultFilterData.setWord2(0);          // no additional collision flags
-        defaultFilterData.setWord3(0);          // word3 is currently not used
+        PX_PHYSICS = PxTopLevelFunctions.CreatePhysics(PX_PHYSICS_VERSION, PX_FOUNDATION, tolerances);
+        DEFAULT_FILTER_DATA = new PxFilterData(0, 0, 0, 0);
+        DEFAULT_FILTER_DATA.setWord0(1);          // collision group: 0 (i.e. 1 << 0)
+        DEFAULT_FILTER_DATA.setWord1(0xffffffff); // collision mask: collide with everything
+        DEFAULT_FILTER_DATA.setWord2(0);          // no additional collision flags
+        DEFAULT_FILTER_DATA.setWord3(0);          // word3 is currently not used
 
-        cookingParams = new PxCookingParams(tolerances);
+        PX_COOKING_PARAMS = new PxCookingParams(tolerances);
 
-        defaultDispatcher = PxTopLevelFunctions.DefaultCpuDispatcherCreate(2);
+        PX_DEFAULT_DISPATCHER = PxTopLevelFunctions.DefaultCpuDispatcherCreate(2);
 
-        PxTopLevelFunctions.InitExtensions(physics);
-        PxVehicleTopLevelFunctions.InitVehicleExtension(foundation);
+        PxTopLevelFunctions.InitExtensions(PX_PHYSICS);
+        PxVehicleTopLevelFunctions.InitVehicleExtension(PX_FOUNDATION);
 
-        serializer = PxSerialization.createSerializationRegistry(physics);
+        PX_SERIALIZATION_REGISTRY = PxSerialization.createSerializationRegistry(PX_PHYSICS);
     }
 }
