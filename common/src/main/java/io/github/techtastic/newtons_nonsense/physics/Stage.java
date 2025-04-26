@@ -4,31 +4,22 @@ import dev.architectury.event.EventResult;
 import dev.architectury.utils.value.IntValue;
 import io.github.techtastic.newtons_nonsense.mixinducks.StageProvider;
 import io.github.techtastic.newtons_nonsense.physics.pipeline.Backstage;
-import io.github.techtastic.newtons_nonsense.registry.physics.materials.PhysicsMaterialRegistry;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Registry;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
-import net.minecraft.world.level.chunk.PalettedContainer;
-import net.minecraft.world.level.chunk.storage.SerializableChunkData;
-import net.minecraft.world.level.levelgen.Heightmap;
 import org.jetbrains.annotations.Nullable;
 import physx.physics.*;
-import physx.support.SupportFunctions;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 
 public class Stage {
     public final PxScene scene = Backstage.createEmptyScene();
     public final ArrayList<PxActor> actors = new ArrayList<>();
-    public final HashMap<ChunkPos, PxRigidStatic> chunkBodies = new HashMap<>();
     private boolean simulate = false;
 
     public Stage() {
@@ -52,63 +43,19 @@ public class Stage {
 
     public static void onChunkLoad(ChunkAccess chunk, @Nullable ServerLevel level) {
         if (level == null) return;
-
-        Stage stage = Stage.getOrCreateStage(level);
-        stage.chunkBodies.computeIfAbsent(chunk.getPos(), (chunkPos) -> {
-            PxShape[] shapes = Backstage.getChunkAsShapes(chunk, level);
-            PxRigidStatic chunkBody = Backstage.createStaticBodyWithShapes(chunk.getPos().x, 0, chunk.getPos().z, shapes);
-            stage.scene.addActor(chunkBody);
-            return chunkBody;
-        });
     }
 
     public static EventResult onBlockBreak(Level level, BlockPos pos, BlockState state, ServerPlayer player, @Nullable IntValue xp) {
-        if (!(level instanceof ServerLevel sLevel)) return EventResult.pass();
-
-        Stage stage = Stage.getOrCreateStage(sLevel);
-        ChunkPos chunkPos = level.getChunkAt(pos).getPos();
-        PxRigidStatic chunkBody = stage.chunkBodies.getOrDefault(chunkPos, null);
-        if (chunkBody == null) return EventResult.pass();
-
-        for (int i = 0; i < chunkBody.getNbShapes(); i++) {
-            PxShape shape = SupportFunctions.PxActor_getShape(chunkBody, i);
-            if (shape.getLocalPose().getP().getX() == pos.getCenter().x - chunkPos.x &&
-                    shape.getLocalPose().getP().getY() == pos.getCenter().y &&
-                    shape.getLocalPose().getP().getZ() == pos.getCenter().z - chunkPos.z) {
-                chunkBody.detachShape(shape, true);
-                shape.release();
-                break;
-            }
-        }
+        if (!(level instanceof ServerLevel sLevel))
+            return EventResult.pass();
 
         return EventResult.pass();
     }
 
     public static EventResult onBlockPlace(Level level, BlockPos pos, BlockState state, @Nullable Entity placer) {
-        if (!(level instanceof ServerLevel sLevel)) return EventResult.pass();
+        if (!(level instanceof ServerLevel sLevel))
+            return EventResult.pass();
 
-        Stage stage = Stage.getOrCreateStage(sLevel);
-        ChunkPos chunkPos = level.getChunkAt(pos).getPos();
-        PxRigidStatic chunkBody = stage.chunkBodies.getOrDefault(chunkPos, null);
-        if (chunkBody == null) return EventResult.pass();
-
-        // I'll make a VoxelShape to PxShape later...
-        // Adjust Material here
-
-        Registry<PxMaterial> materialRegistry = level.registryAccess().lookupOrThrow(PhysicsMaterialRegistry.MATERIAL_REGISTRY_KEY);
-        PxMaterial defaultMaterial = materialRegistry.getValueOrThrow(PhysicsMaterialRegistry.DEFAULT_MATERIAL);
-
-        PxShape shape = Backstage.createBoxShape(
-                .5f,
-                .5f,
-                .5f,
-                (float) (pos.getCenter().x - chunkPos.x),
-                (float) pos.getCenter().y,
-                (float) (pos.getCenter().z - chunkPos.z),
-                defaultMaterial
-        );
-
-        chunkBody.attachShape(shape);
         return EventResult.pass();
     }
 
@@ -126,25 +73,6 @@ public class Stage {
 
     public void removeAndFreeActor(PxActor actor) {
         removeActor(actor);
-        actor.release();
-    }
-
-    public void addChunk(ChunkPos pos, PxRigidStatic actor) {
-        if (actor.getScene() != this.scene)
-            this.scene.addActor(actor);
-        this.chunkBodies.put(pos, actor);
-    }
-
-    public PxRigidStatic removeChunk(ChunkPos pos) {
-        PxRigidStatic actor = this.chunkBodies.remove(pos);
-
-        if (actor != null && actor.getScene() == this.scene)
-            this.scene.removeActor(actor);
-        return actor;
-    }
-
-    public void removeAndFreeChunk(ChunkPos pos) {
-        PxRigidStatic actor = removeChunk(pos);
         actor.release();
     }
 
@@ -179,7 +107,6 @@ public class Stage {
 
     public void free() {
         this.actors.clear();
-        this.chunkBodies.clear();
         this.scene.release();
     }
 }
