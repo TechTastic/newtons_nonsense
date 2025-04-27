@@ -12,6 +12,8 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.Nullable;
+import org.joml.Vector3f;
+import physx.physics.PxMaterial;
 import physx.physics.PxRigidStatic;
 
 import java.util.HashMap;
@@ -50,7 +52,7 @@ public class PhysicsChunkManager {
                 for (int y = chunk.getMinY(); y <= chunk.getHighestFilledSectionIndex() * LevelChunkSection.SECTION_HEIGHT; y++) {
                     BlockPos pos = new BlockPos(x, y, z);
 
-                    if (level.isStateAtPosition(pos, BlockBehaviour.BlockStateBase::isAir))
+                    if (level.isStateAtPosition(pos, state -> state.isAir() || !state.isSolid() || !state.blocksMotion()))
                         continue;
                     BlockState state = level.getBlockState(pos);
 
@@ -70,10 +72,21 @@ public class PhysicsChunkManager {
         return exposedBlocks;
     }
 
-    public static boolean exposesNeighbor(ServerLevel level, BlockState state, BlockPos pos) {
+    private static boolean exposesNeighbor(ServerLevel level, BlockState state, BlockPos pos) {
         VoxelShape shape = state.getCollisionShape(level, pos);
+        return state.isAir() || !state.isSolid() || !state.blocksMotion() || shape.isEmpty() || !shape.equals(Shapes.block());
+    }
 
-        return state.isAir() || shape.isEmpty();
+    private static void addAABBToMesh(AABB box, PxMaterial material, List<Vector3f> vertices, List<Integer> indices, List<PxMaterial> materials) {
+
+    }
+
+    private static void addTriangle(List<Integer> indices, List<PxMaterial> materials, PxMaterial material, int v1, int v2, int v3) {
+        indices.add(v1);
+        indices.add(v2);
+        indices.add(v3);
+
+        materials.add(material);
     }
 
     public PxRigidStatic generateChunkHeightmap(ChunkAccess chunk, ServerLevel level) {
