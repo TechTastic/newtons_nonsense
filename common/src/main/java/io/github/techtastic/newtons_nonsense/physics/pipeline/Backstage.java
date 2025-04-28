@@ -1,27 +1,15 @@
 package io.github.techtastic.newtons_nonsense.physics.pipeline;
 
-import com.mojang.datafixers.util.Pair;
+import io.github.techtastic.newtons_nonsense.NewtonsNonsense;
 import io.github.techtastic.newtons_nonsense.physics.Stage;
 import io.github.techtastic.newtons_nonsense.registry.physics.materials.PhysicsMaterialRegistry;
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
+import io.github.techtastic.newtons_nonsense.util.PhysxUtils;
 import net.minecraft.core.Registry;
-import net.minecraft.core.RegistryAccess;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.util.Tuple;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.chunk.ChunkAccess;
-import net.minecraft.world.level.chunk.LevelChunk;
-import net.minecraft.world.level.chunk.LevelChunkSection;
-import net.minecraft.world.phys.AABB;
-import net.minecraft.world.phys.shapes.CollisionContext;
-import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import org.apache.commons.lang3.tuple.Triple;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-import org.joml.Vector3f;
 import org.lwjgl.system.MemoryStack;
 import physx.PxTopLevelFunctions;
 import physx.common.*;
@@ -31,20 +19,20 @@ import physx.geometry.*;
 import physx.physics.*;
 import physx.vehicle2.PxVehicleTopLevelFunctions;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 
 public class Backstage {
     public static final int PX_PHYSICS_VERSION = PxTopLevelFunctions.getPHYSICS_VERSION();
     private static final PxFoundation PX_FOUNDATION;
-    private static final PxPhysics PX_PHYSICS;
+    public static final PxPhysics PX_PHYSICS;
     private static final PxCookingParams PX_COOKING_PARAMS;
     private static final PxCpuDispatcher PX_DEFAULT_DISPATCHER;
     private static final PxFilterData DEFAULT_FILTER_DATA;
     private static final PxSerializationRegistry PX_SERIALIZATION_REGISTRY;
+
+    private static final HashMap<BlockState, PxGeometry> cachedShapes = new HashMap<>();
 
     static class CustomErrorCallback extends PxErrorCallbackImpl {
         private final Map<PxErrorCodeEnum, String> codeNames = new HashMap<>() {{
@@ -70,6 +58,22 @@ public class Backstage {
     }
 
     public static void init() {}
+
+    public static void generateAllBlockShapes(MinecraftServer server) {
+        if (!cachedShapes.isEmpty()) return;
+
+        BuiltInRegistries.BLOCK.forEach(block ->
+                block.getStateDefinition().getPossibleStates().forEach(state ->
+                        cachedShapes.computeIfAbsent(state, Backstage::generateBlockShape)));
+    }
+
+    public static PxGeometry generateBlockShape(BlockState state) {
+        return cachedShapes.computeIfAbsent(state, k -> {
+            VoxelShape shape = k.getCollisionShape(null, null);
+
+            return PhysxUtils.toPxGeometry(shape, PX_COOKING_PARAMS);
+        });
+    }
 
     public static PxScene createEmptyScene() {
         try (MemoryStack mem = MemoryStack.stackPush()) {
@@ -133,61 +137,25 @@ public class Backstage {
 
     public static PxShape createBoxShape(float lenX, float lenY, float lenZ, float offsetX, float offsetY, float offsetZ, PxMaterial material) {
         try (MemoryStack mem = MemoryStack.stackPush()) {
-            PxBoxGeometry geo = PxBoxGeometry.createAt(mem, MemoryStack::nmalloc, lenX, lenY, lenZ);
-            PxVec3 offset = PxVec3.createAt(mem, MemoryStack::nmalloc, offsetX, offsetY, offsetZ);
-            PxTransform pose = PxTransform.createAt(mem, MemoryStack::nmalloc, offset);
-            PxShapeFlags shapeFlags = new PxShapeFlags((byte) (PxShapeFlagEnum.eSIMULATION_SHAPE.value | PxShapeFlagEnum.eSCENE_QUERY_SHAPE.value));
-            PxShape shape = PX_PHYSICS.createShape(geo, material, false, shapeFlags);
-            shape.setLocalPose(pose);
-            shape.setSimulationFilterData(DEFAULT_FILTER_DATA);
-            return shape;
+            PxBoxGeometry geo = createBoxGeometry(lenX, lenY, lenZ, mem);
+            return createShapeFromGeometry(geo, material, offsetX, offsetY, offsetZ, false, mem);
         }
     }
 
-    public static PxShape[] getChunkAsShapes(ChunkAccess chunk, @NotNull ServerLevel level) {
-        Registry<PxMaterial> materialRegistry = level.registryAccess().lookupOrThrow(PhysicsMaterialRegistry.MATERIAL_REGISTRY_KEY);
-        PxMaterial defaultMaterial = materialRegistry.getValueOrThrow(PhysicsMaterialRegistry.DEFAULT_MATERIAL);
+    public static PxBoxGeometry createBoxGeometry(float lenX, float lenY, float lenZ, MemoryStack mem) {
+        return PxBoxGeometry.createAt(mem, MemoryStack::nmalloc, lenX, lenY, lenZ);
+    }
 
-        ArrayList<PxShape> shapes = new ArrayList<>();
+    public static PxShape createShapeFromGeometry(PxGeometry geom, PxMaterial material, float offsetX, float offsetY, float offsetZ, boolean isExclusive, MemoryStack mem) {
+        PxVec3 offset = PxVec3.createAt(mem, MemoryStack::nmalloc, offsetX, offsetY, offsetZ);
+        PxTransform pose = PxTransform.createAt(mem, MemoryStack::nmalloc, offset);
+        PxShapeFlags shapeFlags = new PxShapeFlags((byte) (PxShapeFlagEnum.eSIMULATION_SHAPE.value | PxShapeFlagEnum.eSCENE_QUERY_SHAPE.value));
 
-        // Loop over sections that could contain blocks
-        for (int s = chunk.getMinSectionY(); s <= chunk.getHighestFilledSectionIndex(); s++) {
-            // Ignore empty sections
-            if (chunk.isSectionEmpty(s))
-                continue;
+        PxShape shape = PX_PHYSICS.createShape(geom, material, isExclusive, shapeFlags);
+        shape.setLocalPose(pose);
+        shape.setSimulationFilterData(DEFAULT_FILTER_DATA);
 
-            // Loop over Blocks in Section
-            LevelChunkSection section = chunk.getSection(chunk.getSectionIndexFromSectionY(s));
-            for (int x = 0; x < LevelChunkSection.SECTION_WIDTH; x++) {
-                for (int y = 0; y < LevelChunkSection.SECTION_HEIGHT; y++) {
-                    for (int z = 0; z < LevelChunkSection.SECTION_WIDTH; z++) {
-                        BlockState state = section.getBlockState(x, y, z);
-                        // Ignore Air
-                        if (state.isAir())
-                            continue;
-
-                        BlockPos truePos = chunk.getPos().getBlockAt(x, s * LevelChunkSection.SECTION_HEIGHT + y, z);
-
-                        // I'll make a VoxelShape to PxShape later...
-                        // Adjust Material here
-
-                        PxShape shape = Backstage.createBoxShape(
-                                .5f,
-                                .5f,
-                                .5f,
-                                (float) (truePos.getCenter().x - chunk.getPos().x),
-                                (float) truePos.getCenter().y,
-                                (float) (truePos.getCenter().z - chunk.getPos().z),
-                                defaultMaterial
-                        );
-
-                        shapes.addLast(shape);
-                    }
-                }
-            }
-        }
-
-        return shapes.toArray(new PxShape[0]);
+        return shape;
     }
 
     static {

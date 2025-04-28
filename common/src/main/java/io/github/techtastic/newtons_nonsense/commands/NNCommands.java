@@ -81,7 +81,7 @@ public class NNCommands {
 
                                             PxShape shape = Backstage.createBoxShape(.5f, .5f, .5f, 0, 0, 0, material.value());
                                             PxRigidStatic box = Backstage.createStaticBodyWithShapes((float) pos.x, (float) pos.y, (float) pos.z, shape);
-                                            Stage.getOrCreateStage(source.getLevel()).addActor(box);
+                                            Stage.getOrCreateStage(source.getLevel()).addActor(box, true);
 
                                             source.sendSuccess(() -> Component.literal("Added new static actor at " + pos), false);
 
@@ -97,7 +97,7 @@ public class NNCommands {
 
                                                     PxShape shape = Backstage.createBoxShape(.5f, .5f, .5f, 0, 0, 0, material.value());
                                                     PxRigidStatic box = Backstage.createStaticBodyWithShapes((float) pos.x, (float) pos.y, (float) pos.z, shape);
-                                                    Stage.getOrCreateStage(source.getLevel()).addActor(box);
+                                                    Stage.getOrCreateStage(source.getLevel()).addActor(box, true);
 
                                                     source.sendSuccess(() -> Component.literal("Added new static actor at " + pos), false);
 
@@ -116,7 +116,7 @@ public class NNCommands {
                                                                 PxShape shape = Backstage.createBoxShape(.5f, .5f, .5f, 0, 0, 0, material.value());
                                                                 shape.getLocalPose().getQ().rotate(PxVec3.createAt(mem, MemoryStack::nmalloc, (float) rot.x, (float) rot.y, (float) rot.z));
                                                                 PxRigidStatic box = Backstage.createStaticBodyWithShapes((float) pos.x, (float) pos.y, (float) pos.z, shape);
-                                                                Stage.getOrCreateStage(source.getLevel()).addActor(box);
+                                                                Stage.getOrCreateStage(source.getLevel()).addActor(box, true);
 
                                                                 source.sendSuccess(() -> Component.literal("Added new static actor at " + pos + " with " + rot + " rotations"), false);
 
@@ -137,7 +137,7 @@ public class NNCommands {
                                                                         PxShape shape = Backstage.createBoxShape(.5f, .5f, .5f, 0, 0, 0, material.value());
                                                                         shape.getLocalPose().getQ().rotate(PxVec3.createAt(mem, MemoryStack::nmalloc, (float) rot.x, (float) rot.y, (float) rot.z));
                                                                         PxRigidStatic box = Backstage.createStaticBodyWithShapes((float) pos.x, (float) pos.y, (float) pos.z, shape);
-                                                                        Stage.getOrCreateStage(source.getLevel()).addActor(box);
+                                                                        Stage.getOrCreateStage(source.getLevel()).addActor(box, true);
 
                                                                         source.sendSuccess(() -> Component.literal("Added new static actor at " + pos + " with " + rot + " rotations and " + material.getRegisteredName() + "material"), false);
 
@@ -159,7 +159,7 @@ public class NNCommands {
                                                                                 PxShape shape = Backstage.createBoxShape((float) size.x, (float) size.y, (float) size.z, 0, 0, 0, material.value());
                                                                                 shape.getLocalPose().getQ().rotate(PxVec3.createAt(mem, MemoryStack::nmalloc, (float) rot.x, (float) rot.y, (float) rot.z));
                                                                                 PxRigidStatic box = Backstage.createStaticBodyWithShapes((float) pos.x, (float) pos.y, (float) pos.z, shape);
-                                                                                Stage.getOrCreateStage(source.getLevel()).addActor(box);
+                                                                                Stage.getOrCreateStage(source.getLevel()).addActor(box, true);
 
                                                                                 source.sendSuccess(() -> Component.literal("Added new static actor at " + pos + " with " + rot + " rotations, " + material.getRegisteredName() + " material and " + size + "half-lengths"), false);
 
@@ -179,7 +179,7 @@ public class NNCommands {
                                                     .getOrThrow(PhysicsMaterialRegistry.DEFAULT_MATERIAL);
 
                                             PxRigidDynamic box = Backstage.createDynamicBox((float) pos.x, (float) pos.y, (float) pos.z, material.value());
-                                            Stage.getOrCreateStage(source.getLevel()).addActor(box);
+                                            Stage.getOrCreateStage(source.getLevel()).addActor(box, true);
 
                                             source.sendSuccess(() -> Component.literal("Added new dynamic actor at " + pos), false);
 
@@ -194,7 +194,7 @@ public class NNCommands {
                                                             .getOrThrow(PhysicsMaterialRegistry.DEFAULT_MATERIAL);
 
                                                     PxRigidDynamic box = Backstage.createDynamicBox((float) pos.x, (float) pos.y, (float) pos.z, material.value());
-                                                    Stage.getOrCreateStage(source.getLevel()).addActor(box);
+                                                    Stage.getOrCreateStage(source.getLevel()).addActor(box, true);
 
                                                     source.sendSuccess(() -> Component.literal("Added new dynamic actor at " + pos), false);
 
@@ -212,7 +212,7 @@ public class NNCommands {
 
                                                                 PxRigidDynamic box = Backstage.createDynamicBox((float) pos.x, (float) pos.y, (float) pos.z, material.value());
                                                                 box.getGlobalPose().getQ().rotate(PxVec3.createAt(mem, MemoryStack::nmalloc, (float) rot.x, (float) rot.y, (float) rot.z));
-                                                                Stage.getOrCreateStage(source.getLevel()).addActor(box);
+                                                                Stage.getOrCreateStage(source.getLevel()).addActor(box, true);
 
                                                                 source.sendSuccess(() -> Component.literal("Added new dynamic actor at " + pos + " with " + rot + " rotations"), false);
 
@@ -232,7 +232,7 @@ public class NNCommands {
 
                                                                         PxRigidDynamic box = Backstage.createDynamicBox((float) pos.x, (float) pos.y, (float) pos.z, material.value());
                                                                         box.getGlobalPose().getQ().rotate(PxVec3.createAt(mem, MemoryStack::nmalloc, (float) rot.x, (float) rot.y, (float) rot.z));
-                                                                        Stage.getOrCreateStage(source.getLevel()).addActor(box);
+                                                                        Stage.getOrCreateStage(source.getLevel()).addActor(box, true);
 
                                                                         source.sendSuccess(() -> Component.literal("Added new dynamic actor at " + pos + " with " + rot + " rotations and " + material.getRegisteredName() + "material"), false);
 
@@ -254,7 +254,7 @@ public class NNCommands {
                                                                                 PxShape shape = Backstage.createBoxShape((float) size.x, (float) size.y, (float) size.z, 0, 0, 0, material.value());
                                                                                 PxRigidStatic box = Backstage.createStaticBodyWithShapes((float) pos.x, (float) pos.y, (float) pos.z, shape);
                                                                                 box.getGlobalPose().getQ().rotate(PxVec3.createAt(mem, MemoryStack::nmalloc, (float) rot.x, (float) rot.y, (float) rot.z));
-                                                                                Stage.getOrCreateStage(source.getLevel()).addActor(box);
+                                                                                Stage.getOrCreateStage(source.getLevel()).addActor(box, true);
 
                                                                                 source.sendSuccess(() -> Component.literal("Added new dynamic actor at " + pos + " with " + rot + " rotations, " + material.getRegisteredName() + " material and " + size + "half-lengths"), false);
 

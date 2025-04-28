@@ -9,6 +9,7 @@ import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
@@ -21,6 +22,7 @@ public class Stage {
     public final PxScene scene = Backstage.createEmptyScene();
     public final ArrayList<PxActor> actors = new ArrayList<>();
     private boolean simulate = false;
+    public final PhysicsChunkManager chunkManager = new PhysicsChunkManager(this);
 
     public Stage() {
     }
@@ -38,16 +40,32 @@ public class Stage {
     }
 
     public static void onServerLevelPostTick(ServerLevel level) {
-        Stage.getOrCreateStage(level).tryAndStep(level, 1f/20f);
+        Stage stage = Stage.getOrCreateStage(level);
+
+        stage.chunkManager.update(level);
+        stage.tryAndStep(level, 1f/20f);
     }
 
     public static void onChunkLoad(ChunkAccess chunk, @Nullable ServerLevel level) {
         if (level == null) return;
+
+        Stage stage = Stage.getOrCreateStage(level);
+        stage.chunkManager.onChunkLoad(chunk, level);
+    }
+
+    public static void onChunkUnload(ChunkAccess chunk, @Nullable ServerLevel level) {
+        if (level == null) return;
+
+        Stage stage = Stage.getOrCreateStage(level);
+        stage.chunkManager.onChunkUnload(chunk, level);
     }
 
     public static EventResult onBlockBreak(Level level, BlockPos pos, BlockState state, ServerPlayer player, @Nullable IntValue xp) {
         if (!(level instanceof ServerLevel sLevel))
             return EventResult.pass();
+
+        Stage stage = Stage.getOrCreateStage(sLevel);
+        stage.chunkManager.onBlockChanged(new ChunkPos(pos));
 
         return EventResult.pass();
     }
@@ -56,13 +74,17 @@ public class Stage {
         if (!(level instanceof ServerLevel sLevel))
             return EventResult.pass();
 
+        Stage stage = Stage.getOrCreateStage(sLevel);
+        stage.chunkManager.onBlockChanged(new ChunkPos(pos));
+
         return EventResult.pass();
     }
 
-    public void addActor(PxActor actor) {
+    public void addActor(PxActor actor, boolean track) {
         if (actor.getScene() != this.scene)
             this.scene.addActor(actor);
-        this.actors.add(actor);
+        if (track)
+            this.actors.add(actor);
     }
 
     public void removeActor(PxActor actor) {

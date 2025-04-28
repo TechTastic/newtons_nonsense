@@ -20,7 +20,7 @@ public final class NewtonsNonsenseNeoForge {
         modEventBus.addListener(NeoForgeNNRegistries::registerDatapackRegistries);
 
         NeoForge.EVENT_BUS.addListener(this::onChunkLoad);
-        //NeoForge.EVENT_BUS.addListener(this::onChunkUnload);
+        NeoForge.EVENT_BUS.addListener(this::onChunkUnload);
     }
 
     private void onChunkLoad(ChunkEvent.Load event) {
@@ -34,6 +34,6 @@ public final class NewtonsNonsenseNeoForge {
         LevelAccessor level = event.getLevel();
         if (!(level instanceof ServerLevel sLevel)) return;
 
-        Stage.getOrCreateStage(sLevel).removeAndFreeChunk(event.getChunk().getPos());
+        Stage.onChunkUnload(event.getChunk(), sLevel);
     }
 }
