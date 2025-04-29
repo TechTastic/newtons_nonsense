@@ -27,7 +27,7 @@ public final class NewtonsNonsense {
         Backstage.init();
 
         LifecycleEvent.SERVER_STOPPED.register(Backstage::onServerStop);
-        //LifecycleEvent.SERVER_LEVEL_LOAD.register(level -> Backstage.generateAllBlockShapes(level.getServer()));
+        //LifecycleEvent.SERVER_LEVEL_LOAD.register(Backstage::generateAllBlockShapes);
 
         LifecycleEvent.SERVER_LEVEL_LOAD.register(Stage::onServerLevelLoad);
         LifecycleEvent.SERVER_LEVEL_UNLOAD.register(Stage::onServerLevelUnload);

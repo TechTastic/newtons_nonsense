@@ -44,6 +44,7 @@ public class PhysicsChunkManager {
     }
 
     public void onChunkLoad(ChunkAccess chunk, ServerLevel level) {
+        System.out.println("Loading Chunk " + chunk.getPos());
         Pair<PxRigidStatic, PxRigidStatic> lodBodies = this.chunkLODBodies.computeIfAbsent(chunk.getPos(), k ->
                 Pair.of(this.generateChunkTerrainMesh(chunk, level), this.generateChunkHeightmap(chunk, level)));
 
@@ -54,6 +55,7 @@ public class PhysicsChunkManager {
     }
 
     public void onChunkUnload(ChunkAccess chunk, ServerLevel level) {
+        System.out.println("Unloading Chunk " + chunk.getPos());
         Pair<PxRigidStatic, PxRigidStatic> lodBodies = this.chunkLODBodies.computeIfAbsent(chunk.getPos(), k ->
                 Pair.of(this.generateChunkTerrainMesh(chunk, level), this.generateChunkHeightmap(chunk, level)));
 
@@ -64,6 +66,7 @@ public class PhysicsChunkManager {
     }
 
     public PxRigidStatic generateChunkTerrainMesh(ChunkAccess chunk, ServerLevel level) {
+        System.out.println("Generating Chunk Terrain...");
         Registry<PxMaterial> materials = level.registryAccess().lookupOrThrow(PhysicsMaterialRegistry.MATERIAL_REGISTRY_KEY);
 
         List<PxShape> shapes = new ArrayList<>();
@@ -77,6 +80,7 @@ public class PhysicsChunkManager {
                         if (level.isStateAtPosition(pos, state -> state.isAir() || !state.isSolid() || !state.blocksMotion()))
                             continue;
                         BlockState state = level.getBlockState(pos);
+                        System.out.println(state.getBlockHolder().getRegisteredName());
 
                         boolean exposed = false;
                         for (Direction dir : Direction.values()) {
@@ -91,7 +95,7 @@ public class PhysicsChunkManager {
 
                         if (!exposed) continue;
 
-                        PxGeometry geom = Backstage.generateBlockShape(state);
+                        PxGeometry geom = Backstage.generateBlockShape(level, state, pos);
                         if (geom == null) continue;
 
                         PxMaterial material = materials.getValue(PhysicsMaterialRegistry.DEFAULT_MATERIAL);
@@ -104,6 +108,7 @@ public class PhysicsChunkManager {
         }
 
         BlockPos chunkBlockPos = chunk.getPos().getWorldPosition();
+        System.out.println("Finishing Chunk Terrain Collision...");
         return Backstage.createStaticBodyWithShapes(chunkBlockPos.getX(), 0, chunkBlockPos.getZ(), shapes.toArray(new PxShape[] {}));
     }
 

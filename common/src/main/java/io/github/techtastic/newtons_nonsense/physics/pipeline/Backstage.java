@@ -4,10 +4,12 @@ import io.github.techtastic.newtons_nonsense.NewtonsNonsense;
 import io.github.techtastic.newtons_nonsense.physics.Stage;
 import io.github.techtastic.newtons_nonsense.registry.physics.materials.PhysicsMaterialRegistry;
 import io.github.techtastic.newtons_nonsense.util.PhysxUtils;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.lwjgl.system.MemoryStack;
@@ -59,20 +61,22 @@ public class Backstage {
 
     public static void init() {}
 
-    public static void generateAllBlockShapes(MinecraftServer server) {
+    public static void generateAllBlockShapes(ServerLevel level) {
         if (!cachedShapes.isEmpty()) return;
 
         BuiltInRegistries.BLOCK.forEach(block ->
-                block.getStateDefinition().getPossibleStates().forEach(state ->
-                        cachedShapes.computeIfAbsent(state, Backstage::generateBlockShape)));
+                block.getStateDefinition().getPossibleStates()
+                        .forEach(state -> generateBlockShape(level, state, BlockPos.ZERO)));
     }
 
-    public static PxGeometry generateBlockShape(BlockState state) {
-        return cachedShapes.computeIfAbsent(state, k -> {
-            VoxelShape shape = k.getCollisionShape(null, null);
+    public static PxGeometry generateBlockShape(ServerLevel level, BlockState state, BlockPos pos) {
+        System.out.println("Generating shape for " + state.getBlockHolder().getRegisteredName());
+        VoxelShape shape = state.getCollisionShape(level, pos);
+        if (!state.isSolid() || state.isAir() || shape.isEmpty()) return null;
 
-            return PhysxUtils.toPxGeometry(shape, PX_COOKING_PARAMS);
-        });
+        System.out.println("Passed Test...");
+
+        return cachedShapes.computeIfAbsent(state, k -> PhysxUtils.toPxGeometry(shape, PX_COOKING_PARAMS));
     }
 
     public static PxScene createEmptyScene() {
