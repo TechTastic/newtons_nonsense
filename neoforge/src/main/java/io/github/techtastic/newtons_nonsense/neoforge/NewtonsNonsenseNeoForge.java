@@ -8,7 +8,6 @@ import net.minecraft.world.level.LevelAccessor;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
-import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.level.ChunkEvent;
 
 @Mod(NewtonsNonsense.MOD_ID)
@@ -19,7 +18,7 @@ public final class NewtonsNonsenseNeoForge {
 
         modEventBus.addListener(NeoForgeNNRegistries::registerDatapackRegistries);
 
-        NeoForge.EVENT_BUS.addListener(this::onChunkLoad);
+        //NeoForge.EVENT_BUS.addListener(this::onChunkLoad);
         //NeoForge.EVENT_BUS.addListener(this::onChunkUnload);
     }
 
