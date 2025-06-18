@@ -7,19 +7,17 @@ import net.minecraft.world.level.saveddata.SavedData;
 import org.jetbrains.annotations.NotNull;
 
 public class LevelPhysicsSavedData extends SavedData {
-    // Chunks
-    // Apples
-    // Tick
-    // Start/Stop
-    // Block Changed
-
     @Override
     public @NotNull CompoundTag save(CompoundTag tag, HolderLookup.Provider lookupProvider) {
+        // Save Apple Data
+
         return tag;
     }
 
     public static LevelPhysicsSavedData load(CompoundTag tag, HolderLookup.Provider lookupProvider) {
         LevelPhysicsSavedData data = new LevelPhysicsSavedData();
+
+        // Load Apple Data
 
         return data;
     }
