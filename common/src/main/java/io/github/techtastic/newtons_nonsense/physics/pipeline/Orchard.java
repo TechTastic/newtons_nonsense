@@ -100,6 +100,10 @@ public class Orchard {
         getTreeFromLevel(level).onChunkUnload(level, chunkAccess);
     }
 
+    protected static ImmutableList<PxShape> getShapesFromDummyLevel(RegistryAccess access, BlockPos pos, BlockState state) {
+        return getOrCreateShapesForState(access, createDummyBlockGetter(state), pos, state);
+    }
+
     protected static ImmutableList<PxShape> getOrCreateShapesForState(RegistryAccess access, BlockGetter blockGetter, BlockPos pos, BlockState state) {
         VoxelShape shape = state.getCollisionShape(blockGetter, pos);
 

@@ -2,6 +2,7 @@ package io.github.techtastic.newtons_nonsense.physics.pipeline;
 
 import com.google.common.collect.ImmutableList;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.state.BlockState;
@@ -44,23 +45,32 @@ public class AppleTree {
             return;
         }
 
-        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-        int maxHeight = chunkAccess.getSectionYFromSectionIndex(chunkAccess.getHighestFilledSectionIndex()) * LevelChunkSection.SECTION_HEIGHT;
-        for (int y = maxHeight; y > level.getMinY(); y--) {
-            pos = pos.setY(y);
+        RegistryAccess access = level.registryAccess();
+
+        CompletableFuture.runAsync(() -> {
+            HashMap<BlockPos, List<PxShape>> loadedShapes = new HashMap<>();
+
+            BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+            int maxHeight = chunkAccess.getSectionYFromSectionIndex(chunkAccess.getHighestFilledSectionIndex()) * LevelChunkSection.SECTION_HEIGHT;
             for (int x = 0; x < LevelChunkSection.SECTION_WIDTH; x++) {
                 pos = pos.setX(x);
                 for (int z = 0; z < LevelChunkSection.SECTION_WIDTH; z++) {
                     pos = pos.setZ(z);
 
-                    BlockState state = chunkAccess.getBlockState(pos);
-                    ImmutableList<PxShape> shapes = Orchard.getOrCreateShapesForState(level.registryAccess(), level, pos, state);
+                    // Height Field Stuff
+
+                    for (int y = maxHeight; y > chunkAccess.getMinY(); y--) {
+                    pos = pos.setY(y);
+
+                        BlockState state = chunkAccess.getBlockState(pos);
+                        ImmutableList<PxShape> shapes = Orchard.getShapesFromDummyLevel(access, pos, state);
+                        if (!shapes.isEmpty())
+                            loadedShapes.computeIfAbsent(pos, key -> new ArrayList<>(shapes));
+                    }
                 }
             }
-        }
 
-        CompletableFuture.runAsync(() -> {
-
+            // Bodies here
         });
 
         this.roots.computeIfAbsent(chunkAccess.getPos(), chunkPos -> {
