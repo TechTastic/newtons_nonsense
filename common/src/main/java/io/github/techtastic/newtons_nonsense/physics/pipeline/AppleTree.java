@@ -1,6 +1,7 @@
 package io.github.techtastic.newtons_nonsense.physics.pipeline;
 
 import com.google.common.collect.ImmutableList;
+import io.github.techtastic.newtons_nonsense.util.PhysxUtils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.server.level.ServerLevel;
@@ -8,13 +9,17 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.LevelChunkSection;
+import net.minecraft.world.level.levelgen.Heightmap;
+import org.lwjgl.system.MemoryStack;
 import physx.PxTopLevelFunctions;
+import physx.common.PxTransform;
 import physx.common.PxVec3;
-import physx.geometry.PxHeightField;
+import physx.geometry.*;
 import physx.physics.PxRigidStatic;
 import physx.physics.PxScene;
 import physx.physics.PxShape;
 import physx.physics.PxShapeExt;
+import physx.support.PxArray_PxHeightFieldSample;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -48,29 +53,43 @@ public class AppleTree {
         RegistryAccess access = level.registryAccess();
 
         CompletableFuture.runAsync(() -> {
-            HashMap<BlockPos, List<PxShape>> loadedShapes = new HashMap<>();
+            try (MemoryStack mem = MemoryStack.stackPush()) {
+                ConcurrentHashMap<BlockPos, List<PxShape>> loadedShapes = new ConcurrentHashMap<>();
+                PxRigidStatic loadedBody = Orchard.PX_PHYSICS.createRigidStatic(new PxTransform(PhysxUtils.toPxVec3(chunkAccess.getPos().x, 0, chunkAccess.getPos().z)));
+                PxRigidStatic unloadedBody = Orchard.PX_PHYSICS.createRigidStatic(new PxTransform(PhysxUtils.toPxVec3(chunkAccess.getPos().x, 0, chunkAccess.getPos().z)));
 
-            BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-            int maxHeight = chunkAccess.getSectionYFromSectionIndex(chunkAccess.getHighestFilledSectionIndex()) * LevelChunkSection.SECTION_HEIGHT;
-            for (int x = 0; x < LevelChunkSection.SECTION_WIDTH; x++) {
-                pos = pos.setX(x);
-                for (int z = 0; z < LevelChunkSection.SECTION_WIDTH; z++) {
-                    pos = pos.setZ(z);
+                Root root = new Root(chunkAccess.getPos(), this.scene, loadedBody, loadedShapes, unloadedBody);
 
-                    // Height Field Stuff
 
-                    for (int y = maxHeight; y > chunkAccess.getMinY(); y--) {
-                    pos = pos.setY(y);
+                PxArray_PxHeightFieldSample samples = new PxArray_PxHeightFieldSample();
 
-                        BlockState state = chunkAccess.getBlockState(pos);
-                        ImmutableList<PxShape> shapes = Orchard.getShapesFromDummyLevel(access, pos, state);
-                        if (!shapes.isEmpty())
-                            loadedShapes.computeIfAbsent(pos, key -> new ArrayList<>(shapes));
+                BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+                for (int x = 0; x < LevelChunkSection.SECTION_WIDTH; x++) {
+                    pos = pos.setX(x);
+                    for (int z = 0; z < LevelChunkSection.SECTION_WIDTH; z++) {
+                        pos = pos.setZ(z);
+
+                        // Height Field Stuff
+                        int maxHeight = chunkAccess.getHeight(Heightmap.Types.WORLD_SURFACE_WG, x, z);
+                        PxHeightFieldSample sample = PxHeightFieldSample.createAt(mem, MemoryStack::nmalloc);
+                        sample.setHeight((short) maxHeight);
+                        samples.pushBack(sample);
+
+                        for (int y = maxHeight; y > chunkAccess.getMinY(); y--) {
+                            pos = pos.setY(y);
+
+                            BlockState state = chunkAccess.getBlockState(pos);
+                            root.onBlockChange(level, pos, state);
+                        }
                     }
                 }
-            }
 
-            // Bodies here
+                PxHeightFieldDesc heightFieldDesc = PxHeightFieldDesc.createAt(mem, MemoryStack::nmalloc);
+                heightFieldDesc.setNbColumns(LevelChunkSection.SECTION_WIDTH);
+                heightFieldDesc.setNbRows(LevelChunkSection.SECTION_WIDTH);
+                heightFieldDesc.setFormat(PxHeightFieldFormatEnum.eS16_TM);
+                heightFieldDesc.setSamples(samples);
+            }
         });
 
         this.roots.computeIfAbsent(chunkAccess.getPos(), chunkPos -> {
@@ -123,10 +142,10 @@ public class AppleTree {
         private final ChunkPos chunkPos;
         private final PxScene scene;
         private final PxRigidStatic loadedBody;
-        private final HashMap<BlockPos, List<PxShape>> loadedShapes;
+        private final ConcurrentHashMap<BlockPos, List<PxShape>> loadedShapes;
         private final PxRigidStatic unloadedBody;
 
-        protected Root(ChunkPos chunkPos, PxScene scene, PxRigidStatic loadedBody, HashMap<BlockPos, List<PxShape>> loadedShapes, PxRigidStatic unloadedBody) {
+        protected Root(ChunkPos chunkPos, PxScene scene, PxRigidStatic loadedBody, ConcurrentHashMap<BlockPos, List<PxShape>> loadedShapes, PxRigidStatic unloadedBody) {
             this.chunkPos = chunkPos;
             this.scene = scene;
             this.loadedBody = loadedBody;
