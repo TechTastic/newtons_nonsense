@@ -1,7 +1,6 @@
 package io.github.techtastic.newtons_nonsense.fabric;
 
-import io.github.techtastic.newtons_nonsense.physics.Stage;
-import io.github.techtastic.newtons_nonsense.registry.physics.materials.PhysicsMaterialRegistry;
+import io.github.techtastic.newtons_nonsense.physics.pipeline.Orchard;
 import net.fabricmc.api.ModInitializer;
 
 import io.github.techtastic.newtons_nonsense.NewtonsNonsense;
@@ -19,12 +18,12 @@ public final class NewtonsNonsenseFabric implements ModInitializer {
         NewtonsNonsense.init();
 
         DynamicRegistries.registerSynced(
-                PhysicsMaterialRegistry.MATERIAL_REGISTRY_KEY,
-                PhysicsMaterialRegistry.MATERIAL_CODEC,
-                PhysicsMaterialRegistry.MATERIAL_CODEC
+                Orchard.MaterialRegistry.MATERIAL_REGISTRY_KEY,
+                Orchard.MaterialRegistry.MATERIAL_CODEC,
+                Orchard.MaterialRegistry.MATERIAL_CODEC
         );
 
-        //ServerChunkEvents.CHUNK_LOAD.register((level, chunk) -> Stage.onChunkLoad(chunk, level));
-        //ServerChunkEvents.CHUNK_UNLOAD.register((level, chunk) -> Stage.getOrCreateStage(level).removeAndFreeChunk(chunk.getPos()));
+        ServerChunkEvents.CHUNK_LOAD.register(Orchard::onChunkLoad);
+        ServerChunkEvents.CHUNK_UNLOAD.register(Orchard::onChunkUnload);
     }
 }
