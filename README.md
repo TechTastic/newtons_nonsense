@@ -13,7 +13,10 @@ like center of mass, orientation, transform matrices, etc.
 ## To Do List
 - [ ] Setup `Orchard`
   - [ ] Material Registry
-  - [ ] BlockState-based Shape/Mass/Material Registry
+  - [ ] BlockState-based Physics Registry
+    - [ ] Shape
+    - [ ] Mass
+    - [ ] Material
 - [ ] Setup `AppleTree`
   - [ ] Setup Chunk physics bodies
 - [ ] Setup generic `Apple`
