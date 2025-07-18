@@ -3,22 +3,25 @@ A Minecraft physics mod heavily inspired by Valkyrien Skies 2 utilizing PhysX vi
 
 ## Layout Breakdown
 Once the server comes online, the `Orchard` is created for the server. The `Orchard` handles setting up PhysX and a variety of helper methods. 
-It will also create, store, and manage the per-level physics islands (`AppleTree`s).
+It will also create, store, and manage the per-level physics islands (`Tree`s).
 
-`AppleTree`s, as stated before, are per-level physics island instances which create, store, and handle the per-level physics objects (`Apple`s) and they also handle chunk collision physics bodies. 
+`Tree`s, as stated before, are per-level physics island instances which create, store, and handle the per-level physics objects (`Apple`s) and they also handle chunk collision physics bodies. 
 
 `Apple`s are the physics objects themselves, whether that be a `StructureApple` (think VS2 Ships) or an `EntityApple`, and store any relevant physics information like center of mass, orientation, transform matrices, etc.
 
-`Orchard` (physics manager) -> `AppleTree` (physics island) -> `Apple` (physics object)
+`Orchard` (physics manager) -> `Tree` (physics island) -> `Apple` (physics object)
 
 ## To Do List
-- [ ] Setup `Orchard`
+- [X] Setup `Orchard`
   - [ ] Material Registry
+  - [ ] Collision Shape Registry
   - [ ] BlockState-based Physics Registry
     - [ ] Shape
     - [ ] Mass
     - [ ] Material
-- [ ] Setup `AppleTree`
+  - [ ] Level-based Physics Registry
+    - [ ] Gravity
+- [X] Setup `Tree`
   - [ ] Setup Chunk physics bodies
 - [ ] Setup generic `Apple`
 - [ ] Setup S2C sync and rendering
