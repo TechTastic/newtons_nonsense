@@ -1,5 +1,5 @@
 modLoader = "javafml"
-loaderVersion = "[4,)"
+loaderVersion = "[2,)"
 #issueTrackerURL = ""
 license = "MIT"
 
@@ -7,30 +7,30 @@ license = "MIT"
 modId = "newtons_nonsense"
 version = "${version}"
 displayName = "Newton's Nonsense"
-authors = "TechTastic"
+authors = ""
 description = '''
-A Minecraft physics mod heavily inspired by Valkyrien Skies 2!
+
 '''
 #logoFile = ""
 
 [[dependencies.newtons_nonsense]]
 modId = "neoforge"
 type = "required"
-versionRange = "[21.4,)"
+versionRange = "[21,)"
 ordering = "NONE"
 side = "BOTH"
 
 [[dependencies.newtons_nonsense]]
 modId = "minecraft"
 type = "required"
-versionRange = "[1.21.4,)"
+versionRange = "[1.21.1,)"
 ordering = "NONE"
 side = "BOTH"
 
 [[dependencies.newtons_nonsense]]
 modId = "architectury"
 type = "required"
-versionRange = "[15.0.1,)"
+versionRange = "[13.0.8,)"
 ordering = "AFTER"
 side = "BOTH"
 

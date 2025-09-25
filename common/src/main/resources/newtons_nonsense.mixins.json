@@ -3,9 +3,9 @@
   "package": "io.github.techtastic.newtons_nonsense.mixin",
   "compatibilityLevel": "JAVA_21",
   "minVersion": "0.8",
-  "mixins": [
-  ],
   "client": [
+  ],
+  "mixins": [
   ],
   "injectors": {
     "defaultRequire": 1

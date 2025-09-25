@@ -1,8 +1,7 @@
 package io.github.techtastic.newtons_nonsense.fabric;
 
-import net.fabricmc.api.ModInitializer;
-
 import io.github.techtastic.newtons_nonsense.NewtonsNonsense;
+import net.fabricmc.api.ModInitializer;
 
 public final class NewtonsNonsenseFabric implements ModInitializer {
     @Override

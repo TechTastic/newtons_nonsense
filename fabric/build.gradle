@@ -27,23 +27,12 @@ configurations {
 dependencies {
     modImplementation "net.fabricmc:fabric-loader:$rootProject.fabric_loader_version"
 
-    // Fabric API. This is technically optional, but you probably want it anyway.
     modImplementation "net.fabricmc.fabric-api:fabric-api:$rootProject.fabric_api_version"
 
-    // Architectury API. This is optional, and you can comment it out if you don't need it.
     modImplementation "dev.architectury:architectury-fabric:$rootProject.architectury_api_version"
 
     common(project(path: ':common', configuration: 'namedElements')) { transitive false }
     shadowBundle project(path: ':common', configuration: 'transformProductionFabric')
-
-    // PhysX JNI java bindings
-    include(implementation("de.fabmax:physx-jni:2.6.0"))
-
-    // PhysX JNI native libraries - you can add the one matching your system or all
-    include(runtimeOnly("de.fabmax:physx-jni:2.6.0:natives-windows"))
-    include(runtimeOnly("de.fabmax:physx-jni:2.6.0:natives-linux"))
-    include(runtimeOnly("de.fabmax:physx-jni:2.6.0:natives-macos"))
-    include(runtimeOnly("de.fabmax:physx-jni:2.6.0:natives-macos-arm64"))
 }
 
 processResources {
@@ -60,5 +49,5 @@ shadowJar {
 }
 
 remapJar {
-    inputFile.set shadowJar.archiveFile
+    input.set shadowJar.archiveFile
 }
