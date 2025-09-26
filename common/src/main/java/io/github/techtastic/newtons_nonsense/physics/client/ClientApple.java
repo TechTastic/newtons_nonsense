@@ -8,7 +8,7 @@ import net.minecraft.core.Vec3i;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Quaterniondc;
 
-public class ClientApple extends Apple {
+public abstract class ClientApple extends Apple {
     private final Vec3 position;
     private final Quaterniondc rotation;
     private final Vec3 scale;
@@ -49,5 +49,5 @@ public class ClientApple extends Apple {
     }
 
     @Environment(EnvType.CLIENT)
-    public void render(DynamicVisual.Context context, Vec3i prevRenderOrigin) {}
+    public abstract void render(DynamicVisual.Context context, Vec3i prevRenderOrigin);
 }
