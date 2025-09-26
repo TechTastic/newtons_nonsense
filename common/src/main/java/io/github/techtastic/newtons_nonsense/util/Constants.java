@@ -13,6 +13,7 @@ public class Constants {
     public static final int PX_PHYSICS_VERSION;
 
     public static final PxFoundation FOUNDATION;
+    public static final PxTolerancesScale TOLERANCES;
     public static final PxPhysics PHYSICS;
     public static final PxCookingParams COOKING_PARAMS;
 
@@ -46,8 +47,8 @@ public class Constants {
         FOUNDATION = PxTopLevelFunctions.CreateFoundation(PX_PHYSICS_VERSION, allocator, errorCb);
 
         // create PhysX main physics object
-        PxTolerancesScale tolerances = new PxTolerancesScale();
-        PHYSICS = PxTopLevelFunctions.CreatePhysics(PX_PHYSICS_VERSION, FOUNDATION, tolerances);
+        TOLERANCES = new PxTolerancesScale();
+        PHYSICS = PxTopLevelFunctions.CreatePhysics(PX_PHYSICS_VERSION, FOUNDATION, TOLERANCES);
         //defaultMaterial = physics.createMaterial(0.5f, 0.5f, 0.5f);
         //defaultFilterData = new PxFilterData(0, 0, 0, 0);
         //defaultFilterData.setWord0(1);          // collision group: 0 (i.e. 1 << 0)
@@ -55,7 +56,7 @@ public class Constants {
         //defaultFilterData.setWord2(0);          // no additional collision flags
         //defaultFilterData.setWord3(0);          // word3 is currently not used
 
-        COOKING_PARAMS = new PxCookingParams(tolerances);
+        COOKING_PARAMS = new PxCookingParams(TOLERANCES);
 
         DEFAULT_DISPATCHER = PxTopLevelFunctions.DefaultCpuDispatcherCreate(2);
 

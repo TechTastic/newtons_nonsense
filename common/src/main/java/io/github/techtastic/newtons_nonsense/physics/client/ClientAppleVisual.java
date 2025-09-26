@@ -1,4 +1,4 @@
-package io.github.techtastic.newtons_nonsense.physics.client;
+/*package io.github.techtastic.newtons_nonsense.physics.client;
 
 import dev.engine_room.flywheel.api.task.Plan;
 import dev.engine_room.flywheel.api.visual.DynamicVisual;
@@ -55,3 +55,4 @@ public class ClientAppleVisual implements DynamicVisual, EffectVisual<ClientAppl
         }
     }
 }
+*/
