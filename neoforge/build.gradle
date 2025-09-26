@@ -33,8 +33,24 @@ repositories {
 
 dependencies {
     neoForge "net.neoforged:neoforge:$rootProject.neoforge_version"
-
     modImplementation "dev.architectury:architectury-neoforge:$rootProject.architectury_api_version"
+
+    // PhysX JNI java bindings
+    include(implementation("de.fabmax:physx-jni:$physx_version"))
+    forgeRuntimeLibrary("de.fabmax:physx-jni:$physx_version")
+
+    // PhysX JNI native libraries - you can add the one matching your system or all
+    include(runtimeOnly("de.fabmax:physx-jni:$physx_version:natives-windows"))
+    forgeRuntimeLibrary("de.fabmax:physx-jni:$physx_version:natives-windows")
+    include(runtimeOnly("de.fabmax:physx-jni:$physx_version:natives-linux"))
+    forgeRuntimeLibrary("de.fabmax:physx-jni:$physx_version:natives-linux")
+    include(runtimeOnly("de.fabmax:physx-jni:$physx_version:natives-macos"))
+    forgeRuntimeLibrary("de.fabmax:physx-jni:$physx_version:natives-macos")
+    include(runtimeOnly("de.fabmax:physx-jni:$physx_version:natives-macos-arm64"))
+    forgeRuntimeLibrary("de.fabmax:physx-jni:$physx_version:natives-macos-arm64")
+
+    modApi "dev.engine-room.flywheel:flywheel-neoforge-api-$minecraft_version:$flywheel_version"
+    modImplementation "dev.engine-room.flywheel:flywheel-neoforge-$minecraft_version:$flywheel_version"
 
     common(project(path: ':common', configuration: 'namedElements')) { transitive false }
     shadowBundle project(path: ':common', configuration: 'transformProductionNeoForge')

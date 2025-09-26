@@ -26,10 +26,20 @@ configurations {
 
 dependencies {
     modImplementation "net.fabricmc:fabric-loader:$rootProject.fabric_loader_version"
-
     modImplementation "net.fabricmc.fabric-api:fabric-api:$rootProject.fabric_api_version"
-
     modImplementation "dev.architectury:architectury-fabric:$rootProject.architectury_api_version"
+
+    // PhysX JNI java bindings
+    include(implementation("de.fabmax:physx-jni:$physx_version"))
+
+    // PhysX JNI native libraries - you can add the one matching your system or all
+    include(runtimeOnly("de.fabmax:physx-jni:$physx_version:natives-windows"))
+    include(runtimeOnly("de.fabmax:physx-jni:$physx_version:natives-linux"))
+    include(runtimeOnly("de.fabmax:physx-jni:$physx_version:natives-macos"))
+    include(runtimeOnly("de.fabmax:physx-jni:$physx_version:natives-macos-arm64"))
+
+    modApi "dev.engine-room.flywheel:flywheel-fabric-api-$minecraft_version:$flywheel_version"
+    modImplementation "dev.engine-room.flywheel:flywheel-fabric-$minecraft_version:$flywheel_version"
 
     common(project(path: ':common', configuration: 'namedElements')) { transitive false }
     shadowBundle project(path: ':common', configuration: 'transformProductionFabric')
