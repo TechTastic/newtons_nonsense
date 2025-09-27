@@ -20,7 +20,7 @@ public final class NewtonsNonsenseNeoForge {
     }
 
     private void onFlywheelReload(ReloadLevelRendererEvent event) {
-        // Get AppleTree
+        // Get ServerPhysicsWorld
         // Get objects
         // Add all to VisualizationHelper
         //   VisualizationHelper.queueAdd();
