@@ -9,8 +9,9 @@ public class PhysicsObjectTypes {
     public static final DeferredRegister<PhysicsObjectType<?>> PHYSICS_OBJECT_TYPES =
             DeferredRegister.create(NewtonsNonsense.MOD_ID, PhysicsObjectType.REGISTRY_KEY);
 
-    public static final RegistrySupplier<PhysicsObjectType<?>> BOX_OBJECT_TYPE =
-            PHYSICS_OBJECT_TYPES.register("box", () -> new PhysicsObjectType<>(BoxPhysicsObject::new));
+    public static final RegistrySupplier<PhysicsObjectType<BoxPhysicsObject>> BOX_OBJECT_TYPE =
+            PHYSICS_OBJECT_TYPES.register("box", () -> new PhysicsObjectType<>(BoxPhysicsObject::new,
+                    (level, box, previousBox, visualizationContext, dynamicContext) -> box.render(level, (BoxPhysicsObject) previousBox, visualizationContext, dynamicContext)));
 
     public static void register() {
         PHYSICS_OBJECT_TYPES.register();

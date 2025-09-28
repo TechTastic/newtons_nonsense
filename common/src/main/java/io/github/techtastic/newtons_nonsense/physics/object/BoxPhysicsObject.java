@@ -1,16 +1,41 @@
 package io.github.techtastic.newtons_nonsense.physics.object;
 
+import com.mojang.blaze3d.vertex.PoseStack;
+import dev.engine_room.flywheel.api.instance.Instancer;
+import dev.engine_room.flywheel.api.model.Model;
+import dev.engine_room.flywheel.api.visual.DynamicVisual;
+import dev.engine_room.flywheel.api.visualization.VisualizationContext;
+import dev.engine_room.flywheel.lib.instance.InstanceTypes;
+import dev.engine_room.flywheel.lib.instance.OrientedInstance;
+import dev.engine_room.flywheel.lib.instance.TransformedInstance;
+import dev.engine_room.flywheel.lib.model.Models;
+import io.github.techtastic.newtons_nonsense.NewtonsNonsense;
 import io.github.techtastic.newtons_nonsense.PhysicsObjectTypes;
 import io.github.techtastic.newtons_nonsense.physics.AbstractPhysicsObject;
+import io.github.techtastic.newtons_nonsense.physics.CollisionShapeBuilder;
 import io.github.techtastic.newtons_nonsense.registries.PhysicsObjectType;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtOps;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import org.joml.*;
 
 public class BoxPhysicsObject extends AbstractPhysicsObject {
     private Vec3 dimensions;
+    private BlockState state;
+
+    @Environment(EnvType.CLIENT)
+    private TransformedInstance instance;
 
     public BoxPhysicsObject(CompoundTag nbt) {
         super(nbt);
@@ -20,6 +45,7 @@ public class BoxPhysicsObject extends AbstractPhysicsObject {
         super();
         this.position = position;
         this.dimensions = dimensions;
+        this.state = state;
 
         // TODO Use BlockState for Material later
     }
@@ -32,15 +58,24 @@ public class BoxPhysicsObject extends AbstractPhysicsObject {
     }
 
     @Override
+    protected @NotNull CollisionShapeBuilder gatherCollisionShapes(@NotNull CollisionShapeBuilder builder, @NotNull RegistryAccess access) {
+        return builder.box(access, dimensions);
+    }
+
+    @Override
     protected void serializeAdditionalNBT(CompoundTag nbt) {
         nbt.putDouble("dim_x", dimensions.x);
         nbt.putDouble("dim_y", dimensions.y);
         nbt.putDouble("dim_z", dimensions.z);
+        BlockState.CODEC.encode(this.state, NbtOps.INSTANCE, new CompoundTag()).ifSuccess(tag -> nbt.put("state", tag));
     }
 
     @Override
     protected void deserializeAdditionalNBT(CompoundTag nbt) {
         dimensions = new Vec3(nbt.getDouble("dim_x"), nbt.getDouble("dim_y"), nbt.getDouble("dim_z"));
+        BlockState.CODEC.parse(NbtOps.INSTANCE, nbt.getCompound("state"))
+                .ifSuccess(state -> this.state = state)
+                .ifError(ignored -> this.state = Blocks.AIR.defaultBlockState());
     }
 
     @Override
@@ -53,7 +88,32 @@ public class BoxPhysicsObject extends AbstractPhysicsObject {
     }
 
     @Override
-    public PhysicsObjectType<? extends AbstractPhysicsObject> getType() {
+    public void render(ClientLevel level, @Nullable BoxPhysicsObject previousBox, VisualizationContext visualizationContext, DynamicVisual.Context dynamicContext) {
+        if (this.instance == null) {
+            Model model = Models.block(this.state);
+            this.instance = visualizationContext.instancerProvider().instancer(InstanceTypes.TRANSFORMED, model).createInstance();
+        }
+
+        NewtonsNonsense.LOGGER.info("This is the render method!");
+
+        Vec3 targetPos = this.position;
+        Quaternionfc targetRot = new Quaternionf(this.rotation);
+        if (previousBox != null) {
+            targetPos = previousBox.getPosition().lerp(this.position, dynamicContext.partialTick());
+            targetRot = new Quaternionf(previousBox.getRotation().slerp(this.rotation, dynamicContext.partialTick(), new Quaterniond()));
+        }
+        Vec3 offsetPos = targetPos.subtract(dynamicContext.camera().getPosition());
+
+        this.instance
+                .setIdentityTransform()
+                .translate(visualizationContext.renderOrigin())
+                .rotate(targetRot)
+                .light(level.getLightEngine().getRawBrightness(BlockPos.containing(targetPos), 0))
+                .setVisible(true);
+    }
+
+    @Override
+    public PhysicsObjectType<BoxPhysicsObject> getType() {
         return PhysicsObjectTypes.BOX_OBJECT_TYPE.get();
     }
 }

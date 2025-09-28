@@ -1,5 +1,8 @@
 package io.github.techtastic.newtons_nonsense.physics;
 
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -15,13 +18,12 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class Backend {
-    public static final PxFoundation FOUNDATION = PxTopLevelFunctions.CreateFoundation(
-            PxTopLevelFunctions.getPHYSICS_VERSION(), new PxDefaultAllocator(), new OrchardErrorCallback());
-    public static final PxPhysics PHYSICS = PxTopLevelFunctions.CreatePhysics(
-            PxTopLevelFunctions.getPHYSICS_VERSION(), FOUNDATION, new PxTolerancesScale());
+    private static PxFoundation foundation;
+    private static PxPhysics physics;
 
     private static final Logger LOGGER = LoggerFactory.getLogger("NewtonsNonsense/Backend");
-    private static final HashMap<ResourceKey<Level>, ServerPhysicsWorld> WORLDS = new HashMap<>();
+    private static final HashMap<ResourceKey<Level>, ServerPhysicsWorld> SERVER_WORLDS = new HashMap<>();
+    private static final HashMap<ResourceKey<Level>, ClientPhysicsWorld> CLIENT_WORLDS = new HashMap<>();
     private static Backend instance;
     private final MinecraftServer server;
     private final PxCpuDispatcher dispatcher;
@@ -31,6 +33,8 @@ public class Backend {
 
         LOGGER.info("Initializing PhysX on the server...");
 
+        Backend.getFoundation();
+        Backend.getPhysics();
         this.dispatcher = PxTopLevelFunctions.DefaultCpuDispatcherCreate(2);
 
         LOGGER.info("PhysX has been Initialized!");
@@ -44,17 +48,48 @@ public class Backend {
     }
 
     @NotNull
-    public static ServerPhysicsWorld getOrCreatePhysicsWorld(@NotNull ServerLevel level) {
-        return WORLDS.computeIfAbsent(level.dimension(), ignored -> new ServerPhysicsWorld(Backend.getOrCreateInstance(level.getServer()), level));
+    public static ServerPhysicsWorld getOrCreateServerPhysicsWorld(@NotNull ServerLevel level) {
+        return SERVER_WORLDS.computeIfAbsent(level.dimension(), ignored -> new ServerPhysicsWorld(Backend.getOrCreateInstance(level.getServer()), level));
     }
 
+    @NotNull
+    public static ClientPhysicsWorld getOrCreateClientPhysicsWorld(@NotNull ClientLevel level) {
+        return CLIENT_WORLDS.computeIfAbsent(level.dimension(), ignored -> new ClientPhysicsWorld(level));
+    }
+
+    public static PxFoundation getFoundation() {
+        if (foundation == null)
+            foundation = PxTopLevelFunctions.CreateFoundation(
+                    PxTopLevelFunctions.getPHYSICS_VERSION(),
+                    new PxDefaultAllocator(),
+                    new OrchardErrorCallback()
+            );
+        return foundation;
+    }
+
+    public static PxPhysics getPhysics() {
+        if (physics == null)
+            physics = PxTopLevelFunctions.CreatePhysics(
+                    PxTopLevelFunctions.getPHYSICS_VERSION(),
+                    getFoundation(),
+                    new PxTolerancesScale()
+            );
+        return physics;
+    }
+
+    @Environment(EnvType.SERVER)
     MinecraftServer getServer() {
         return this.server;
     }
 
+    PxCpuDispatcher getDispatcher() {
+        return this.dispatcher;
+    }
+
+    @Environment(EnvType.SERVER)
     public void cleanup() {
-        PHYSICS.destroy();
-        FOUNDATION.release();
+        physics.destroy();
+        foundation.release();
         this.dispatcher.destroy();
     }
 

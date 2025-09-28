@@ -1,12 +1,23 @@
 package io.github.techtastic.newtons_nonsense.physics;
 
 import com.mojang.datafixers.util.Pair;
+import dev.architectury.networking.NetworkManager;
+import dev.engine_room.flywheel.api.visual.DynamicVisual;
+import dev.engine_room.flywheel.api.visualization.VisualizationContext;
+import io.github.techtastic.newtons_nonsense.physics.object.BoxPhysicsObject;
+import io.github.techtastic.newtons_nonsense.physx.PhysXRigidBodyWrapper;
 import io.github.techtastic.newtons_nonsense.registries.PhysicsObjectType;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.util.ExtraCodecs;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import org.jetbrains.annotations.NotNull;
 import org.joml.Quaterniond;
 import org.joml.Quaterniondc;
 import org.joml.Quaternionf;
@@ -40,6 +51,7 @@ public abstract class AbstractPhysicsObject {
 
     public Vec3 getPosition() { return position; }
 
+    @Environment(EnvType.SERVER)
     public void setPosition(Vec3 position) {
         this.position = position;
         if (physxHandle != null) {
@@ -49,6 +61,7 @@ public abstract class AbstractPhysicsObject {
 
     public Quaterniondc getRotation() { return rotation; }
 
+    @Environment(EnvType.SERVER)
     public void setRotation(Quaterniondc rotation) {
         this.rotation = rotation;
         if (physxHandle != null) {
@@ -58,6 +71,7 @@ public abstract class AbstractPhysicsObject {
 
     public Vec3 getLinearVelocity() { return linearVelocity; }
 
+    @Environment(EnvType.SERVER)
     public void setLinearVelocity(Vec3 linearVelocity) {
         this.linearVelocity = linearVelocity;
         if (physxHandle != null) {
@@ -65,8 +79,19 @@ public abstract class AbstractPhysicsObject {
         }
     }
 
+    public Vec3 getAngularVelocity() { return angularVelocity; }
+
+    @Environment(EnvType.SERVER)
+    public void setAngularVelocity(Vec3 angularVelocity) {
+        this.angularVelocity = angularVelocity;
+        if (physxHandle != null) {
+            physxHandle.setAngularVelocity(angularVelocity);
+        }
+    }
+
     public double getMass() { return mass; }
 
+    @Environment(EnvType.SERVER)
     public void setMass(double mass) {
         this.mass = mass;
         if (physxHandle != null) {
@@ -74,12 +99,14 @@ public abstract class AbstractPhysicsObject {
         }
     }
 
+    @Environment(EnvType.SERVER)
     public void applyForce(Vec3 force) {
         if (physxHandle != null) {
             physxHandle.applyForce(force);
         }
     }
 
+    @Environment(EnvType.SERVER)
     public void applyImpulse(Vec3 impulse) {
         if (physxHandle != null) {
             physxHandle.applyImpulse(impulse);
@@ -89,17 +116,17 @@ public abstract class AbstractPhysicsObject {
     public void updateFromPhysX(PhysXRigidBodyWrapper physxBody) {
         this.position = physxBody.getPosition();
         this.rotation = physxBody.getRotation();
-        this.linearVelocity = physxBody.getVelocity();
+        this.linearVelocity = physxBody.getLinearVelocity();
         this.angularVelocity = physxBody.getAngularVelocity();
     }
 
     public CompoundTag serializeNBT() {
         CompoundTag nbt = new CompoundTag();
         nbt.putUUID("id", id);
-        nbt.put("pos", Vec3.CODEC.encode(this.position, NbtOps.INSTANCE, new CompoundTag()).getOrThrow());
-        nbt.put("rot", ExtraCodecs.QUATERNIONF.encode(new Quaternionf(this.rotation), NbtOps.INSTANCE, new CompoundTag()).getOrThrow());
-        nbt.put("linearVel", Vec3.CODEC.encode(this.linearVelocity, NbtOps.INSTANCE, new CompoundTag()).getOrThrow());
-        nbt.put("angularVel", Vec3.CODEC.encode(this.angularVelocity, NbtOps.INSTANCE, new CompoundTag()).getOrThrow());
+        Vec3.CODEC.encode(this.position, NbtOps.INSTANCE, new CompoundTag()).ifSuccess(tag -> nbt.put("pos", tag));
+        ExtraCodecs.QUATERNIONF.encode(new Quaternionf(this.rotation), NbtOps.INSTANCE, new CompoundTag()).ifSuccess(tag -> nbt.put("rot", tag));
+        Vec3.CODEC.encode(this.linearVelocity, NbtOps.INSTANCE, new CompoundTag()).ifSuccess(tag -> nbt.put("linearVel", tag));
+        Vec3.CODEC.encode(this.angularVelocity, NbtOps.INSTANCE, new CompoundTag()).ifSuccess(tag -> nbt.put("angularVel", tag));
         nbt.putDouble("mass", mass);
 
         // Let subclasses add their own data
@@ -119,11 +146,8 @@ public abstract class AbstractPhysicsObject {
         deserializeAdditionalNBT(nbt);
     }
 
-    public void tick(ServerPhysicsWorld world) {}
-
-    public void onAddedToWorld(ServerPhysicsWorld world) {}
-
-    public void onRemovedFromWorld(ServerPhysicsWorld world) {}
+    @NotNull
+    protected abstract CollisionShapeBuilder gatherCollisionShapes(@NotNull CollisionShapeBuilder builder, @NotNull RegistryAccess access);
 
     protected abstract void serializeAdditionalNBT(CompoundTag nbt);
 
@@ -133,10 +157,14 @@ public abstract class AbstractPhysicsObject {
 
     public abstract AABB getBoundingBox();
 
+    @Environment(EnvType.CLIENT)
+    public abstract void render(ClientLevel level, BoxPhysicsObject previousBox, VisualizationContext visualizationContext, DynamicVisual.Context dynamicContext);
+
     public void setPhysXHandle(PhysXRigidBodyWrapper handle) {
         this.physxHandle = handle;
     }
 
+    @Environment(EnvType.SERVER)
     public PhysXRigidBodyWrapper getPhysXHandle() {
         return physxHandle;
     }
