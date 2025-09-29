@@ -39,7 +39,8 @@ public final class NewtonsNonsense {
                 return InteractionResult.SUCCESS;
 
             if (useOnContext.getLevel() instanceof ServerLevel level) {
-                BoxPhysicsObject boxObject = new BoxPhysicsObject(useOnContext.getClickLocation().relative(Direction.UP, 5), new Vec3(.5, .5, .5), level, level.getBlockState(useOnContext.getClickedPos()));
+                Vec3 pos = useOnContext.getClickLocation();
+                BoxPhysicsObject boxObject = new BoxPhysicsObject(pos, new Vec3(.5, .5, .5), level, level.getBlockState(useOnContext.getClickedPos()));
 
                 Backend.getOrCreateServerPhysicsWorld(level).addNewPhysicsObject(boxObject);
                 LOGGER.info("Test Stick Used Successfully!");

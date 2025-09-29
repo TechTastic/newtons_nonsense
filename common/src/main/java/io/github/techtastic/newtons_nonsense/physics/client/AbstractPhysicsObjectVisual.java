@@ -4,18 +4,18 @@ import dev.engine_room.flywheel.api.visual.EffectVisual;
 import dev.engine_room.flywheel.api.visualization.VisualizationContext;
 import dev.engine_room.flywheel.lib.visual.SimpleDynamicVisual;
 import io.github.techtastic.newtons_nonsense.physics.AbstractPhysicsObject;
+import io.github.techtastic.newtons_nonsense.physics.Backend;
 import net.minecraft.client.multiplayer.ClientLevel;
-import org.jetbrains.annotations.Nullable;
+
+import java.util.UUID;
 
 public abstract class AbstractPhysicsObjectVisual<T extends AbstractPhysicsObject> implements SimpleDynamicVisual, EffectVisual<AbstractPhysicsObjectEffect> {
     private final ClientLevel level;
-    private final T object;
-    private final @Nullable T previousObject;
+    private final UUID id;
 
-    public AbstractPhysicsObjectVisual(ClientLevel level, T object, @Nullable T previousObject, VisualizationContext context) {
+    public AbstractPhysicsObjectVisual(ClientLevel level, UUID id, VisualizationContext context) {
         this.level = level;
-        this.object = object;
-        this.previousObject = previousObject;
+        this.id = id;
     }
 
     public ClientLevel getLevel() {
@@ -23,10 +23,10 @@ public abstract class AbstractPhysicsObjectVisual<T extends AbstractPhysicsObjec
     }
 
     public T getPhysicsObject() {
-        return this.object;
+        return (T) Backend.getOrCreateClientPhysicsWorld(level).getPhysicsObject(id);
     }
 
     public T getPreviousPhysicsObject() {
-        return this.previousObject;
+        return (T) Backend.getOrCreateClientPhysicsWorld(level).getPreviousPhysicsObject(id);
     }
 }

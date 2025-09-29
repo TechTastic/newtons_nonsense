@@ -6,6 +6,7 @@ import dev.engine_room.flywheel.api.visualization.VisualizationContext;
 import dev.engine_room.flywheel.lib.instance.InstanceTypes;
 import dev.engine_room.flywheel.lib.instance.TransformedInstance;
 import dev.engine_room.flywheel.lib.model.Models;
+import io.github.techtastic.newtons_nonsense.NewtonsNonsense;
 import io.github.techtastic.newtons_nonsense.physics.client.AbstractPhysicsObjectVisual;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
@@ -16,15 +17,17 @@ import org.joml.Quaterniond;
 import org.joml.Quaternionf;
 import org.joml.Quaternionfc;
 
+import java.util.UUID;
+
 public class BoxPhysicsObjectVisual extends AbstractPhysicsObjectVisual<BoxPhysicsObject> {
     private final TransformedInstance instance;
     private final VisualEmbedding embedding;
     private final Vec3i renderOrigin;
 
-    public BoxPhysicsObjectVisual(ClientLevel level, BoxPhysicsObject object, @Nullable BoxPhysicsObject previousObject, VisualizationContext context) {
-        super(level, object, previousObject, context);
+    public BoxPhysicsObjectVisual(ClientLevel level, UUID id, VisualizationContext context) {
+        super(level, id, context);
 
-        Model model = Models.block(object.getState());
+        Model model = Models.block(this.getPhysicsObject().getState());
         this.instance = context.instancerProvider().instancer(InstanceTypes.TRANSFORMED, model).createInstance();
         this.renderOrigin = context.renderOrigin();
         this.embedding = context.createEmbedding(this.renderOrigin);
@@ -40,6 +43,8 @@ public class BoxPhysicsObjectVisual extends AbstractPhysicsObjectVisual<BoxPhysi
         BoxPhysicsObject box = getPhysicsObject();
         BoxPhysicsObject previousBox = getPreviousPhysicsObject();
         ClientLevel level = getLevel();
+
+        //NewtonsNonsense.LOGGER.info("Object {} Rendered!\nPosition: {}\nRotation: {}", box.getId(), box.getPosition(), box.getRotation());
 
         Vec3 targetPos = box.getPosition();
         Quaternionfc targetRot = new Quaternionf(box.getRotation());

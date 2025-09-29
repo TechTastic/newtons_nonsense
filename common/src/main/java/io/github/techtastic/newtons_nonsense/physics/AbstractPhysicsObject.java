@@ -109,6 +109,7 @@ public abstract class AbstractPhysicsObject {
             this.rotation = physxHandle.getRotation();
             this.linearVelocity = physxHandle.getLinearVelocity();
             this.angularVelocity = physxHandle.getAngularVelocity();
+            this.mass = physxHandle.getMass();
         }
     }
 

@@ -45,13 +45,11 @@ public class ServerPhysicsWorld {
         this.access = level.registryAccess();
 
         // TODO Remove, this is for debugging
-        try (MemoryStack mem = MemoryStack.stackPush()) {
-            PxRigidStatic plane = Backend.getPhysics().createRigidStatic(PxTransform.createAt(mem, MemoryStack::nmalloc, PxVec3.createAt(mem, MemoryStack::nmalloc, 0f, -60f, 0f)));
-            PxPlaneGeometry geom = new PxPlaneGeometry();
-            PxMaterial material = Backend.getPhysics().createMaterial(.5f, .5f, .5f);
-            plane.attachShape(Backend.getPhysics().createShape(geom, material));
-            geom.destroy();
-        }
+        PxRigidStatic plane = Backend.getPhysics().createRigidStatic(new PxTransform(new PxVec3(0f, -60f, 0f)));
+        PxPlaneGeometry geom = new PxPlaneGeometry();
+        PxMaterial material = Backend.getPhysics().createMaterial(.5f, .5f, .5f);
+        plane.attachShape(Backend.getPhysics().createShape(geom, material));
+        geom.destroy();
     }
 
     public void tick() {
@@ -59,32 +57,36 @@ public class ServerPhysicsWorld {
         this.scene.fetchResults(true);
 
         this.objects.forEach((id, object) -> {
-            object.updateFromPhysX();
-            NetworkManager.sendToPlayers(this.level.getPlayers(player -> true), new PhysicsObjectPayload<>(object));
+            if (this.wrappers.containsKey(id)) {
+                object.updateFromPhysX();
+                NewtonsNonsense.LOGGER.info("Object {} Updated!\nPosition: {}\nRotation: {}", id, object.getPosition(), object.getRotation());
+                NetworkManager.sendToPlayers(this.level.getPlayers(player -> true), new PhysicsObjectPayload<>(object));
+            }
         });
     }
 
     public void addNewPhysicsObject(AbstractPhysicsObject object) {
-        try (MemoryStack mem = MemoryStack.stackPush()){
-            PhysXRigidBodyWrapper wrapper = this.wrappers.compute(object.getId(), (id, old) -> {
-                if (old != null)
-                    old.cleanup();
+        PhysXRigidBodyWrapper wrapper = this.wrappers.compute(object.getId(), (id, old) -> {
+            if (old != null)
+                old.cleanup();
 
-                return new PhysXRigidBodyWrapper(id, this.scene, PxTransform.createAt(mem, MemoryStack::nmalloc), object.gatherCollisionShapes(new CollisionShapeBuilder(), this.access).getShapes());
-            });
+            return new PhysXRigidBodyWrapper(id, object.gatherCollisionShapes(new CollisionShapeBuilder(), this.access).getShapes());
+        });
 
-            wrapper.setPosition(object.getPosition());
-            wrapper.setRotation(object.getRotation());
-            wrapper.setMass(object.getMass());
-            wrapper.setLinearVelocity(object.getLinearVelocity());
-            wrapper.setAngularVelocity(object.getAngularVelocity());
+        wrapper.setPosition(object.getPosition());
+        wrapper.setRotation(object.getRotation());
+        wrapper.setLinearVelocity(object.getLinearVelocity());
+        wrapper.setAngularVelocity(object.getAngularVelocity());
+        wrapper.setMass(object.getMass());
 
-            this.objects.compute(object.getId(), (id, ignored) -> {
-                object.setPhysXHandle(wrapper);
-                return object;
-            });
-        }
+        NewtonsNonsense.LOGGER.info("Object {} Created!\nPosition: {}\nRotation: {}", object.getId(), object.getPosition(), object.getRotation());
 
-        NewtonsNonsense.LOGGER.info("Has Object been Added Successfully? {} and {}", this.objects.containsKey(object.getId()), this.wrappers.containsKey(object.getId()));
+        this.objects.compute(object.getId(), (id, ignored) -> {
+            object.setPhysXHandle(wrapper);
+            this.scene.addActor(wrapper.getActor());
+            return object;
+        });
+
+        //NewtonsNonsense.LOGGER.info("Has Object been Added Successfully? {} and {}", this.objects.containsKey(object.getId()), this.wrappers.containsKey(object.getId()));
     }
 }

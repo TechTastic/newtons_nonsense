@@ -10,8 +10,10 @@ import net.minecraft.data.models.blockstates.PropertyDispatch;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
+import org.apache.commons.lang3.function.TriFunction;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.UUID;
 import java.util.function.Function;
 
 public class PhysicsObjectType<T extends AbstractPhysicsObject> {
@@ -19,9 +21,9 @@ public class PhysicsObjectType<T extends AbstractPhysicsObject> {
             ResourceKey.createRegistryKey(ResourceLocation.fromNamespaceAndPath(NewtonsNonsense.MOD_ID, "physics_object_types"));
 
     private final Function<CompoundTag, T> factory;
-    private final PropertyDispatch.QuadFunction<ClientLevel, T, T, VisualizationContext, AbstractPhysicsObjectVisual<T>> visual;
+    private final TriFunction<ClientLevel, UUID, VisualizationContext, AbstractPhysicsObjectVisual<T>> visual;
 
-    public PhysicsObjectType(Function<CompoundTag, T> factory, PropertyDispatch.QuadFunction<ClientLevel, T, T, VisualizationContext, AbstractPhysicsObjectVisual<T>> visual) {
+    public PhysicsObjectType(Function<CompoundTag, T> factory, TriFunction<ClientLevel, UUID, VisualizationContext, AbstractPhysicsObjectVisual<T>> visual) {
         this.factory = factory;
         this.visual = visual;
     }
@@ -34,7 +36,7 @@ public class PhysicsObjectType<T extends AbstractPhysicsObject> {
         return object.serializeNBT();
     }
 
-    public AbstractPhysicsObjectVisual<T> createVisual(ClientLevel level, AbstractPhysicsObject object, @Nullable AbstractPhysicsObject previousObject, VisualizationContext context) {
-        return this.visual.apply(level, (T) object, (T) previousObject, context);
+    public AbstractPhysicsObjectVisual<T> createVisual(ClientLevel level, UUID id, VisualizationContext context) {
+        return this.visual.apply(level, id, context);
     }
 }

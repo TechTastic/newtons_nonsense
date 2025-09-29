@@ -1,37 +1,36 @@
 package io.github.techtastic.newtons_nonsense.physx;
 
+import io.github.techtastic.newtons_nonsense.NewtonsNonsense;
 import io.github.techtastic.newtons_nonsense.physics.Backend;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Quaterniond;
 import org.joml.Quaterniondc;
+import org.joml.Vector3f;
 import org.lwjgl.system.MemoryStack;
+import physx.common.PxIDENTITYEnum;
 import physx.common.PxQuat;
 import physx.common.PxTransform;
 import physx.common.PxVec3;
 import physx.physics.PxForceModeEnum;
 import physx.physics.PxRigidDynamic;
-import physx.physics.PxScene;
 import physx.physics.PxShape;
 
 import java.util.UUID;
 
 public class PhysXRigidBodyWrapper {
     private final UUID id;
-    private final PxRigidDynamic actor;
+    private final PxRigidDynamic actor = Backend.getPhysics().createRigidDynamic(new PxTransform());
 
-    public PhysXRigidBodyWrapper(UUID id, PxRigidDynamic actor) {
+    public PhysXRigidBodyWrapper(UUID id, PxShape[] shapes) {
         this.id = id;
-        this.actor = actor;
-    }
-
-    public PhysXRigidBodyWrapper(UUID id, PxScene scene, PxTransform transform, PxShape[] shapes) {
-        this(id, Backend.getPhysics().createRigidDynamic(transform));
 
         for (PxShape shape : shapes) {
             this.actor.attachShape(shape);
         }
+    }
 
-        scene.addActor(this.actor);
+    public PxRigidDynamic getActor() {
+        return this.actor;
     }
 
     public UUID getId() {
@@ -44,10 +43,13 @@ public class PhysXRigidBodyWrapper {
     }
 
     public void setPosition(Vec3 position) {
-        try (MemoryStack mem = MemoryStack.stackPush()) {
-            PxVec3 vec = PxVec3.createAt(mem, MemoryStack::nmalloc, (float)position.x, (float)position.y, (float)position.z);
-            this.actor.getGlobalPose().setP(vec);
-        }
+        PxVec3 vec = this.actor.getGlobalPose().getP();
+        NewtonsNonsense.LOGGER.info("Object Position: {}", position);
+        vec.setX((float)position.x);
+        vec.setY((float)position.y);
+        vec.setZ((float)position.z);
+        NewtonsNonsense.LOGGER.info("PhysX Position: ({}, {}, {})", vec.getX(), vec.getY(), vec.getZ());
+        this.actor.getGlobalPose().setP(vec);
     }
 
     public Quaterniondc getRotation() {
@@ -56,10 +58,12 @@ public class PhysXRigidBodyWrapper {
     }
 
     public void setRotation(Quaterniondc rotation) {
-        try (MemoryStack mem = MemoryStack.stackPush()) {
-            PxQuat quat = PxQuat.createAt(mem, MemoryStack::nmalloc, (float)rotation.x(), (float)rotation.y(), (float)rotation.z(), (float)rotation.w());
-            this.actor.getGlobalPose().setQ(quat);
-        }
+        PxQuat quat = this.actor.getGlobalPose().getQ();
+        quat.setX((float)rotation.x());
+        quat.setY((float)rotation.y());
+        quat.setZ((float)rotation.z());
+        quat.setW((float)rotation.w());
+        this.actor.getGlobalPose().setQ(quat);
     }
 
     public Vec3 getLinearVelocity() {
@@ -68,10 +72,11 @@ public class PhysXRigidBodyWrapper {
     }
 
     public void setLinearVelocity(Vec3 linearVelocity) {
-        try (MemoryStack mem = MemoryStack.stackPush()) {
-            PxVec3 vec = PxVec3.createAt(mem, MemoryStack::nmalloc, (float)linearVelocity.x, (float)linearVelocity.y, (float)linearVelocity.z);
-            this.actor.setLinearVelocity(vec, true);
-        }
+        PxVec3 vec = this.actor.getLinearVelocity();
+        vec.setX((float)linearVelocity.x);
+        vec.setY((float)linearVelocity.y);
+        vec.setZ((float)linearVelocity.z);
+        this.actor.setLinearVelocity(vec, true);
     }
 
     public Vec3 getAngularVelocity() {
@@ -80,10 +85,11 @@ public class PhysXRigidBodyWrapper {
     }
 
     public void setAngularVelocity(Vec3 angularVelocity) {
-        try (MemoryStack mem = MemoryStack.stackPush()) {
-            PxVec3 vec = PxVec3.createAt(mem, MemoryStack::nmalloc, (float)angularVelocity.x, (float)angularVelocity.y, (float)angularVelocity.z);
-            this.actor.setAngularVelocity(vec, true);
-        }
+        PxVec3 vec = this.actor.getAngularVelocity();
+        vec.setX((float)angularVelocity.x);
+        vec.setY((float)angularVelocity.y);
+        vec.setZ((float)angularVelocity.z);
+        this.actor.setAngularVelocity(vec, true);
     }
 
     public double getMass() {
