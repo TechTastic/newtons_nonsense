@@ -5,6 +5,9 @@ import io.github.techtastic.newtons_nonsense.NewtonsNonsense;
 import io.github.techtastic.newtons_nonsense.physics.networking.PhysicsObjectPayload;
 import io.github.techtastic.newtons_nonsense.physx.PhysXRigidBodyWrapper;
 import net.minecraft.core.RegistryAccess;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtOps;
+import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
 import org.lwjgl.system.MemoryStack;
 import physx.PxTopLevelFunctions;
@@ -56,8 +59,8 @@ public class ServerPhysicsWorld {
         this.scene.fetchResults(true);
 
         this.objects.forEach((id, object) -> {
-            object.updateFromPhysX(this.wrappers.get(id));
-            NetworkManager.sendToPlayers(this.level.getPlayers(player -> true), new PhysicsObjectPayload(id, object));
+            object.updateFromPhysX();
+            NetworkManager.sendToPlayers(this.level.getPlayers(player -> true), new PhysicsObjectPayload<>(object));
         });
     }
 

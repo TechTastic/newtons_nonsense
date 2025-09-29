@@ -1,26 +1,16 @@
 package io.github.techtastic.newtons_nonsense.physics;
 
-import com.mojang.datafixers.util.Pair;
-import dev.architectury.networking.NetworkManager;
-import dev.engine_room.flywheel.api.visual.DynamicVisual;
-import dev.engine_room.flywheel.api.visualization.VisualizationContext;
-import io.github.techtastic.newtons_nonsense.physics.object.BoxPhysicsObject;
 import io.github.techtastic.newtons_nonsense.physx.PhysXRigidBodyWrapper;
 import io.github.techtastic.newtons_nonsense.registries.PhysicsObjectType;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.NbtOps;
-import net.minecraft.util.ExtraCodecs;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
 import org.joml.Quaterniond;
 import org.joml.Quaterniondc;
-import org.joml.Quaternionf;
 
 import java.util.UUID;
 
@@ -113,20 +103,48 @@ public abstract class AbstractPhysicsObject {
         }
     }
 
-    public void updateFromPhysX(PhysXRigidBodyWrapper physxBody) {
-        this.position = physxBody.getPosition();
-        this.rotation = physxBody.getRotation();
-        this.linearVelocity = physxBody.getLinearVelocity();
-        this.angularVelocity = physxBody.getAngularVelocity();
+    public void updateFromPhysX() {
+        if (physxHandle != null) {
+            this.position = physxHandle.getPosition();
+            this.rotation = physxHandle.getRotation();
+            this.linearVelocity = physxHandle.getLinearVelocity();
+            this.angularVelocity = physxHandle.getAngularVelocity();
+        }
     }
 
     public CompoundTag serializeNBT() {
         CompoundTag nbt = new CompoundTag();
         nbt.putUUID("id", id);
-        Vec3.CODEC.encode(this.position, NbtOps.INSTANCE, new CompoundTag()).ifSuccess(tag -> nbt.put("pos", tag));
-        ExtraCodecs.QUATERNIONF.encode(new Quaternionf(this.rotation), NbtOps.INSTANCE, new CompoundTag()).ifSuccess(tag -> nbt.put("rot", tag));
-        Vec3.CODEC.encode(this.linearVelocity, NbtOps.INSTANCE, new CompoundTag()).ifSuccess(tag -> nbt.put("linearVel", tag));
-        Vec3.CODEC.encode(this.angularVelocity, NbtOps.INSTANCE, new CompoundTag()).ifSuccess(tag -> nbt.put("angularVel", tag));
+
+        if (this.position != null) {
+            CompoundTag tag = new CompoundTag();
+            tag.putDouble("x", this.position.x);
+            tag.putDouble("y", this.position.y);
+            tag.putDouble("z", this.position.z);
+            nbt.put("pos", tag);
+        }
+        if (this.rotation != null) {
+            CompoundTag tag = new CompoundTag();
+            tag.putDouble("x", this.rotation.x());
+            tag.putDouble("y", this.rotation.y());
+            tag.putDouble("z", this.rotation.z());
+            tag.putDouble("w", this.rotation.w());
+            nbt.put("rot", tag);
+        }
+        if (this.linearVelocity != null) {
+            CompoundTag tag = new CompoundTag();
+            tag.putDouble("x", this.linearVelocity.x);
+            tag.putDouble("y", this.linearVelocity.y);
+            tag.putDouble("z", this.linearVelocity.z);
+            nbt.put("linearVel", tag);
+        }
+        if (this.angularVelocity != null) {
+            CompoundTag tag = new CompoundTag();
+            tag.putDouble("x", this.angularVelocity.x);
+            tag.putDouble("y", this.angularVelocity.y);
+            tag.putDouble("z", this.angularVelocity.z);
+            nbt.put("angularVel", tag);
+        }
         nbt.putDouble("mass", mass);
 
         // Let subclasses add their own data
@@ -137,10 +155,22 @@ public abstract class AbstractPhysicsObject {
 
     public void deserializeNBT(CompoundTag nbt) {
         id = nbt.getUUID("id");
-        this.position = Vec3.CODEC.decode(NbtOps.INSTANCE, nbt.getCompound("pos")).mapOrElse(Pair::getFirst, ignored -> Vec3.ZERO);
-        this.rotation = ExtraCodecs.QUATERNIONF.decode(NbtOps.INSTANCE, nbt.getCompound("rot")).mapOrElse(pair -> new Quaterniond(pair.getFirst()), ignored -> new Quaterniond());
-        this.linearVelocity = Vec3.CODEC.decode(NbtOps.INSTANCE, nbt.getCompound("linearVel")).mapOrElse(Pair::getFirst, ignored -> Vec3.ZERO);
-        this.angularVelocity = Vec3.CODEC.decode(NbtOps.INSTANCE, nbt.getCompound("angularVel")).mapOrElse(Pair::getFirst, ignored -> Vec3.ZERO);
+        if (nbt.contains("pos", CompoundTag.TAG_COMPOUND)) {
+            CompoundTag tag = nbt.getCompound("pos");
+            this.position = new Vec3(tag.getDouble("x"), tag.getDouble("y"), tag.getDouble("z"));
+        }
+        if (nbt.contains("rot", CompoundTag.TAG_COMPOUND)) {
+            CompoundTag tag = nbt.getCompound("rot");
+            this.rotation = new Quaterniond(tag.getDouble("x"), tag.getDouble("y"), tag.getDouble("z"), tag.getDouble("w"));
+        }
+        if (nbt.contains("linearVel", CompoundTag.TAG_COMPOUND)) {
+            CompoundTag tag = nbt.getCompound("linearVel");
+            this.linearVelocity = new Vec3(tag.getDouble("x"), tag.getDouble("y"), tag.getDouble("z"));
+        }
+        if (nbt.contains("angularVel", CompoundTag.TAG_COMPOUND)) {
+            CompoundTag tag = nbt.getCompound("angularVel");
+            this.angularVelocity = new Vec3(tag.getDouble("x"), tag.getDouble("y"), tag.getDouble("z"));
+        }
         mass = nbt.getDouble("mass");
 
         deserializeAdditionalNBT(nbt);
@@ -156,9 +186,6 @@ public abstract class AbstractPhysicsObject {
     public abstract PhysicsObjectType<? extends AbstractPhysicsObject> getType();
 
     public abstract AABB getBoundingBox();
-
-    @Environment(EnvType.CLIENT)
-    public abstract void render(ClientLevel level, BoxPhysicsObject previousBox, VisualizationContext visualizationContext, DynamicVisual.Context dynamicContext);
 
     public void setPhysXHandle(PhysXRigidBodyWrapper handle) {
         this.physxHandle = handle;

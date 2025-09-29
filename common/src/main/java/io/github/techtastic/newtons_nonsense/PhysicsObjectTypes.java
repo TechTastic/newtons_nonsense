@@ -2,7 +2,8 @@ package io.github.techtastic.newtons_nonsense;
 
 import dev.architectury.registry.registries.DeferredRegister;
 import dev.architectury.registry.registries.RegistrySupplier;
-import io.github.techtastic.newtons_nonsense.physics.object.BoxPhysicsObject;
+import io.github.techtastic.newtons_nonsense.physics.object.box.BoxPhysicsObject;
+import io.github.techtastic.newtons_nonsense.physics.object.box.BoxPhysicsObjectVisual;
 import io.github.techtastic.newtons_nonsense.registries.PhysicsObjectType;
 
 public class PhysicsObjectTypes {
@@ -10,8 +11,7 @@ public class PhysicsObjectTypes {
             DeferredRegister.create(NewtonsNonsense.MOD_ID, PhysicsObjectType.REGISTRY_KEY);
 
     public static final RegistrySupplier<PhysicsObjectType<BoxPhysicsObject>> BOX_OBJECT_TYPE =
-            PHYSICS_OBJECT_TYPES.register("box", () -> new PhysicsObjectType<>(BoxPhysicsObject::new,
-                    (level, box, previousBox, visualizationContext, dynamicContext) -> box.render(level, (BoxPhysicsObject) previousBox, visualizationContext, dynamicContext)));
+            PHYSICS_OBJECT_TYPES.register("box", () -> new PhysicsObjectType<>(BoxPhysicsObject::new, BoxPhysicsObjectVisual::new));
 
     public static void register() {
         PHYSICS_OBJECT_TYPES.register();

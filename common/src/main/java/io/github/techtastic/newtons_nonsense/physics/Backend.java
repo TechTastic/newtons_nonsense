@@ -86,11 +86,10 @@ public class Backend {
         return this.dispatcher;
     }
 
-    @Environment(EnvType.SERVER)
     public void cleanup() {
+        this.dispatcher.destroy();
         physics.destroy();
         foundation.release();
-        this.dispatcher.destroy();
     }
 
     private static class OrchardErrorCallback extends PxErrorCallbackImpl {

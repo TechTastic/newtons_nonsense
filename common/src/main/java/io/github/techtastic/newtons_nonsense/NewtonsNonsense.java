@@ -6,14 +6,11 @@ import dev.architectury.event.events.client.ClientLifecycleEvent;
 import dev.architectury.event.events.common.LifecycleEvent;
 import dev.architectury.event.events.common.TickEvent;
 import dev.architectury.networking.NetworkManager;
-import dev.architectury.platform.Platform;
 import dev.architectury.registry.registries.DeferredRegister;
 import dev.architectury.registry.registries.RegistrySupplier;
-import dev.architectury.utils.Env;
 import io.github.techtastic.newtons_nonsense.physics.Backend;
 import io.github.techtastic.newtons_nonsense.physics.networking.PhysicsObjectPayload;
-import io.github.techtastic.newtons_nonsense.physics.object.BoxPhysicsObject;
-import net.fabricmc.api.EnvType;
+import io.github.techtastic.newtons_nonsense.physics.object.box.BoxPhysicsObject;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.Direction;
@@ -81,7 +78,6 @@ public final class NewtonsNonsense {
     }
 
     public static void onVisualReload(ClientLevel level) {
-        NewtonsNonsense.LOGGER.info("This is the Visual Reload event!");
         Backend.getOrCreateClientPhysicsWorld(level).onVisualReload(level);
     }
 

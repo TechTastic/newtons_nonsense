@@ -12,6 +12,7 @@ public class ClientPhysicsWorld {
     private final ClientLevel level;
     private final Map<UUID, AbstractPhysicsObject> previousObjects = new ConcurrentHashMap<>();
     private final Map<UUID, AbstractPhysicsObject> objects = new ConcurrentHashMap<>();
+    private final Map<UUID, AbstractPhysicsObjectEffect<? extends AbstractPhysicsObject>> effects = new ConcurrentHashMap<>();
 
     protected ClientPhysicsWorld(ClientLevel level) {
         this.level = level;
@@ -26,5 +27,16 @@ public class ClientPhysicsWorld {
         if (this.objects.containsKey(object.getId()))
             this.previousObjects.put(object.getId(), this.objects.get(object.getId()));
         this.objects.put(object.getId(), object);
+
+        this.effects.compute(object.getId(), (id, effect) -> {
+            if (effect == null) {
+                AbstractPhysicsObjectEffect<? extends AbstractPhysicsObject> newEffect = new AbstractPhysicsObjectEffect<>(level, object, this.previousObjects.getOrDefault(id, null));
+                VisualizationHelper.queueAdd(newEffect);
+                return newEffect;
+            }
+
+            VisualizationHelper.queueUpdate(effect.update(object, this.previousObjects.getOrDefault(id, null)));
+            return effect;
+        });
     }
 }

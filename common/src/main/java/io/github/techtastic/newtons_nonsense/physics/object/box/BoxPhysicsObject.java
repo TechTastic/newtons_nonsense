@@ -1,15 +1,11 @@
-package io.github.techtastic.newtons_nonsense.physics.object;
+package io.github.techtastic.newtons_nonsense.physics.object.box;
 
-import com.mojang.blaze3d.vertex.PoseStack;
-import dev.engine_room.flywheel.api.instance.Instancer;
 import dev.engine_room.flywheel.api.model.Model;
 import dev.engine_room.flywheel.api.visual.DynamicVisual;
 import dev.engine_room.flywheel.api.visualization.VisualizationContext;
 import dev.engine_room.flywheel.lib.instance.InstanceTypes;
-import dev.engine_room.flywheel.lib.instance.OrientedInstance;
 import dev.engine_room.flywheel.lib.instance.TransformedInstance;
 import dev.engine_room.flywheel.lib.model.Models;
-import io.github.techtastic.newtons_nonsense.NewtonsNonsense;
 import io.github.techtastic.newtons_nonsense.PhysicsObjectTypes;
 import io.github.techtastic.newtons_nonsense.physics.AbstractPhysicsObject;
 import io.github.techtastic.newtons_nonsense.physics.CollisionShapeBuilder;
@@ -34,9 +30,6 @@ public class BoxPhysicsObject extends AbstractPhysicsObject {
     private Vec3 dimensions;
     private BlockState state;
 
-    @Environment(EnvType.CLIENT)
-    private TransformedInstance instance;
-
     public BoxPhysicsObject(CompoundTag nbt) {
         super(nbt);
     }
@@ -48,6 +41,10 @@ public class BoxPhysicsObject extends AbstractPhysicsObject {
         this.state = state;
 
         // TODO Use BlockState for Material later
+    }
+
+    public BlockState getState() {
+        return this.state;
     }
 
     public Vec3 getDimensions() {
@@ -85,31 +82,6 @@ public class BoxPhysicsObject extends AbstractPhysicsObject {
                 position.x - half.x, position.y - half.y, position.z - half.z,
                 position.x + half.x, position.y + half.y, position.z + half.z
         );
-    }
-
-    @Override
-    public void render(ClientLevel level, @Nullable BoxPhysicsObject previousBox, VisualizationContext visualizationContext, DynamicVisual.Context dynamicContext) {
-        if (this.instance == null) {
-            Model model = Models.block(this.state);
-            this.instance = visualizationContext.instancerProvider().instancer(InstanceTypes.TRANSFORMED, model).createInstance();
-        }
-
-        NewtonsNonsense.LOGGER.info("This is the render method!");
-
-        Vec3 targetPos = this.position;
-        Quaternionfc targetRot = new Quaternionf(this.rotation);
-        if (previousBox != null) {
-            targetPos = previousBox.getPosition().lerp(this.position, dynamicContext.partialTick());
-            targetRot = new Quaternionf(previousBox.getRotation().slerp(this.rotation, dynamicContext.partialTick(), new Quaterniond()));
-        }
-        Vec3 offsetPos = targetPos.subtract(dynamicContext.camera().getPosition());
-
-        this.instance
-                .setIdentityTransform()
-                .translate(visualizationContext.renderOrigin())
-                .rotate(targetRot)
-                .light(level.getLightEngine().getRawBrightness(BlockPos.containing(targetPos), 0))
-                .setVisible(true);
     }
 
     @Override
