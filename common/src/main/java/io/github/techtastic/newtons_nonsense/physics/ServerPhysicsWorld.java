@@ -22,11 +22,13 @@ public class ServerPhysicsWorld extends PhysicsWorld<ServerLevel> {
     private final Map<UUID, AbstractPhysicsObject> objects = new ConcurrentHashMap<>();
     private final Map<UUID, PhysXRigidBodyWrapper> wrappers = new ConcurrentHashMap<>();
 
+    private final Backend backend;
     private final PxScene scene;
     private boolean pause;
 
     protected ServerPhysicsWorld(Backend backend, ServerLevel level) {
         super(level);
+        this.backend = backend;
         PxSceneDesc desc = new PxSceneDesc(Backend.getPhysics().getTolerancesScale());
         // TODO In the future, get gravity from Level
         desc.setGravity(new PxVec3(0f, -9.81f, 0f));
@@ -40,7 +42,6 @@ public class ServerPhysicsWorld extends PhysicsWorld<ServerLevel> {
         PxPlaneGeometry geom = new PxPlaneGeometry();
         PxMaterial material = Backend.getPhysics().createMaterial(.5f, .5f, .5f);
         plane.attachShape(Backend.getPhysics().createShape(geom, material));
-        geom.destroy();
         this.scene.addActor(plane);
     }
 

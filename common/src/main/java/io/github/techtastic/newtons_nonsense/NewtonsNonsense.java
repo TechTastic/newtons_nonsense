@@ -43,6 +43,7 @@ public final class NewtonsNonsense {
         LifecycleEvent.SERVER_LEVEL_LOAD.register(level -> Backend.getOrCreatePhysicsWorld(level));
         //LifecycleEvent.SERVER_LEVEL_UNLOAD.register(level -> Backend.getOrCreateServerPhysicsWorld(level));
         TickEvent.SERVER_LEVEL_POST.register(level -> ((ServerPhysicsWorld) Backend.getOrCreatePhysicsWorld(level)).tryTick());
+
         ClientLifecycleEvent.CLIENT_LEVEL_LOAD.register(Backend::getOrCreatePhysicsWorld);
 
         CommandRegistrationEvent.EVENT.register(NNCommands::register);

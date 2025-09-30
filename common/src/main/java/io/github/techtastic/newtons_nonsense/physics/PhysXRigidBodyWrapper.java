@@ -48,11 +48,9 @@ public class PhysXRigidBodyWrapper {
 
     public void setPosition(Vec3 position) {
         PxVec3 vec = this.actor.getGlobalPose().getP();
-        NewtonsNonsense.LOGGER.info("Object Position: {}", position);
         vec.setX((float)position.x);
         vec.setY((float)position.y);
         vec.setZ((float)position.z);
-        NewtonsNonsense.LOGGER.info("PhysX Position: ({}, {}, {})", vec.getX(), vec.getY(), vec.getZ());
         this.actor.getGlobalPose().setP(vec);
     }
 

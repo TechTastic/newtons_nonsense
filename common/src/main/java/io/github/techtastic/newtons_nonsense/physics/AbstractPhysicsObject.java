@@ -5,6 +5,7 @@ import dev.architectury.utils.Env;
 import dev.architectury.utils.EnvExecutor;
 import io.github.techtastic.newtons_nonsense.registries.PhysicsObjectType;
 import net.fabricmc.api.EnvType;
+import net.minecraft.client.Minecraft;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.phys.AABB;
@@ -27,7 +28,8 @@ public abstract class AbstractPhysicsObject {
 
     public AbstractPhysicsObject(UUID id, Vec3 position, Quaterniondc rotation, Vec3 linearVelocity, Vec3 angularVelocity, double mass) {
         this.id = id;
-        this.setPhysXHandle(new PhysXRigidBodyWrapper(id));
+        if (Minecraft.getInstance().level != null)
+            this.setPhysXHandle(new PhysXRigidBodyWrapper(id));
         this.setPosition(position);
         this.setRotation(rotation);
         this.setLinearVelocity(linearVelocity);
@@ -54,10 +56,8 @@ public abstract class AbstractPhysicsObject {
 
     public void setPosition(Vec3 position) {
         this.position = position;
-        EnvExecutor.runInEnv(EnvType.SERVER, () -> () -> {
-            if (this.physxHandle != null)
-                this.physxHandle.setPosition(position);
-        });
+        if (this.physxHandle != null)
+            this.physxHandle.setPosition(position);
     }
 
     public Quaterniondc getRotation() {
@@ -66,10 +66,8 @@ public abstract class AbstractPhysicsObject {
 
     public void setRotation(Quaterniondc rotation) {
         this.rotation = rotation;
-        EnvExecutor.runInEnv(EnvType.SERVER, () -> () -> {
-            if (this.physxHandle != null)
-                this.physxHandle.setRotation(rotation);
-        });
+        if (this.physxHandle != null)
+            this.physxHandle.setRotation(rotation);
     }
 
     public Vec3 getLinearVelocity() {
@@ -78,10 +76,8 @@ public abstract class AbstractPhysicsObject {
 
     public void setLinearVelocity(Vec3 linearVelocity) {
         this.linearVelocity = linearVelocity;
-        EnvExecutor.runInEnv(EnvType.SERVER, () -> () -> {
-            if (this.physxHandle != null)
-                this.physxHandle.setLinearVelocity(linearVelocity);
-        });
+        if (this.physxHandle != null)
+            this.physxHandle.setLinearVelocity(linearVelocity);
     }
 
     public Vec3 getAngularVelocity() {
@@ -90,10 +86,8 @@ public abstract class AbstractPhysicsObject {
 
     public void setAngularVelocity(Vec3 angularVelocity) {
         this.angularVelocity = angularVelocity;
-        EnvExecutor.runInEnv(EnvType.SERVER, () -> () -> {
-            if (this.physxHandle != null)
-                this.physxHandle.setAngularVelocity(angularVelocity);
-        });
+        if (this.physxHandle != null)
+            this.physxHandle.setAngularVelocity(angularVelocity);
     }
 
     public double getMass() {
@@ -102,10 +96,8 @@ public abstract class AbstractPhysicsObject {
 
     public void setMass(double mass) {
         this.mass = mass;
-        EnvExecutor.runInEnv(EnvType.SERVER, () -> () -> {
-            if (this.physxHandle != null)
-                this.physxHandle.setMass(mass);
-        });
+        if (this.physxHandle != null)
+            this.physxHandle.setMass(mass);
     }
 
     public void applyForce(Vec3 force) {

@@ -1,5 +1,6 @@
 package io.github.techtastic.newtons_nonsense.physics;
 
+import io.github.techtastic.newtons_nonsense.registries.Material;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -78,7 +79,6 @@ public class Backend {
         return physics;
     }
 
-    @Environment(EnvType.SERVER)
     MinecraftServer getServer() {
         return this.server;
     }
@@ -88,6 +88,8 @@ public class Backend {
     }
 
     public void cleanup() {
+        this.server.registryAccess().lookup(Material.REGISTRY_KEY).ifPresent(reg -> reg.listElements().forEach(ref -> ref.value().destroy()));
+
         this.dispatcher.destroy();
         physics.destroy();
         foundation.release();
