@@ -1,19 +1,21 @@
 package io.github.techtastic.newtons_nonsense;
 
-
 import com.mojang.logging.LogUtils;
 import dev.architectury.event.events.client.ClientLifecycleEvent;
+import dev.architectury.event.events.common.CommandRegistrationEvent;
 import dev.architectury.event.events.common.LifecycleEvent;
 import dev.architectury.event.events.common.TickEvent;
 import dev.architectury.networking.NetworkManager;
+import dev.architectury.platform.Platform;
 import dev.architectury.registry.registries.DeferredRegister;
 import dev.architectury.registry.registries.RegistrySupplier;
+import dev.architectury.utils.Env;
+import dev.architectury.utils.EnvExecutor;
 import io.github.techtastic.newtons_nonsense.physics.Backend;
 import io.github.techtastic.newtons_nonsense.physics.networking.PhysicsObjectPayload;
 import io.github.techtastic.newtons_nonsense.physics.object.box.BoxPhysicsObject;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.core.Direction;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionHand;
@@ -39,12 +41,11 @@ public final class NewtonsNonsense {
                 return InteractionResult.SUCCESS;
 
             if (useOnContext.getLevel() instanceof ServerLevel level) {
-                Vec3 pos = useOnContext.getClickLocation();
-                BoxPhysicsObject boxObject = new BoxPhysicsObject(pos, new Vec3(.5, .5, .5), level, level.getBlockState(useOnContext.getClickedPos()));
+                Vec3 pos = Vec3.atCenterOf(useOnContext.getClickedPos()).relative(useOnContext.getClickedFace(), 1);
+                BoxPhysicsObject boxObject = new BoxPhysicsObject(pos, new Vec3(.5, .5, .5), level.getBlockState(useOnContext.getClickedPos()));
 
                 Backend.getOrCreateServerPhysicsWorld(level).addNewPhysicsObject(boxObject);
                 LOGGER.info("Test Stick Used Successfully!");
-                return InteractionResult.SUCCESS;
             }
 
             return super.useOn(useOnContext);
@@ -62,18 +63,26 @@ public final class NewtonsNonsense {
         LifecycleEvent.SERVER_STARTED.register(Backend::getOrCreateInstance);
         LifecycleEvent.SERVER_STOPPED.register(server -> Backend.getOrCreateInstance(server).cleanup());
 
-        LifecycleEvent.SERVER_LEVEL_LOAD.register(level -> Backend.getOrCreateServerPhysicsWorld(level));
+        LifecycleEvent.SERVER_LEVEL_LOAD.register(level -> {
+            if (Platform.getEnvironment() == Env.SERVER)
+                Backend.getOrCreateServerPhysicsWorld(level);
+        });
         //LifecycleEvent.SERVER_LEVEL_UNLOAD.register(level -> Backend.getOrCreateServerPhysicsWorld(level));
-        TickEvent.SERVER_LEVEL_POST.register(level -> Backend.getOrCreateServerPhysicsWorld(level).tick());
+        TickEvent.SERVER_LEVEL_POST.register(level -> {
+            if (Platform.getEnvironment() == Env.SERVER)
+                Backend.getOrCreateServerPhysicsWorld(level).tryTick();
+        });
         ClientLifecycleEvent.CLIENT_LEVEL_LOAD.register(Backend::getOrCreateClientPhysicsWorld);
 
-        NetworkManager.registerReceiver(NetworkManager.Side.S2C, PhysicsObjectPayload.TYPE, PhysicsObjectPayload.CODEC, (payload, context) -> {
-            context.queue(() -> {
-                ClientLevel level = Minecraft.getInstance().level;
-                assert level != null;
-                Backend.getOrCreateClientPhysicsWorld(level).update(payload.object());
-            });
-        });
+        CommandRegistrationEvent.EVENT.register(NNCommands::register);
+
+        NetworkManager.registerReceiver(NetworkManager.Side.S2C, PhysicsObjectPayload.TYPE, PhysicsObjectPayload.CODEC, (payload, context) ->
+                context.queue(() -> {
+                    ClientLevel level = Minecraft.getInstance().level;
+                    assert level != null;
+                    Backend.getOrCreateClientPhysicsWorld(level).update(payload.object());
+                })
+        );
 
         ITEMS.register();
     }

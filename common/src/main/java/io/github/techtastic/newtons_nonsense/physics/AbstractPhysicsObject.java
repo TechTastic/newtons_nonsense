@@ -1,9 +1,10 @@
 package io.github.techtastic.newtons_nonsense.physics;
 
-import io.github.techtastic.newtons_nonsense.physx.PhysXRigidBodyWrapper;
+import dev.architectury.platform.Platform;
+import dev.architectury.utils.Env;
+import dev.architectury.utils.EnvExecutor;
 import io.github.techtastic.newtons_nonsense.registries.PhysicsObjectType;
 import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.phys.AABB;
@@ -15,101 +16,116 @@ import org.joml.Quaterniondc;
 import java.util.UUID;
 
 public abstract class AbstractPhysicsObject {
-    protected UUID id;
-    protected Vec3 position;
-    protected Quaterniondc rotation;
-    protected Vec3 linearVelocity;
-    protected Vec3 angularVelocity;
-    protected double mass;
+    private UUID id;
+    private Vec3 position;
+    private Quaterniondc rotation;
+    private Vec3 linearVelocity;
+    private Vec3 angularVelocity;
+    private double mass;
 
     private PhysXRigidBodyWrapper physxHandle;
 
-    public AbstractPhysicsObject() {
-        this.id = UUID.randomUUID();
-        this.position = Vec3.ZERO;
-        this.rotation = new Quaterniond();
-        this.linearVelocity = Vec3.ZERO;
-        this.angularVelocity = Vec3.ZERO;
-        this.mass = 1.0;
+    public AbstractPhysicsObject(UUID id, Vec3 position, Quaterniondc rotation, Vec3 linearVelocity, Vec3 angularVelocity, double mass) {
+        this.id = id;
+        if (Platform.getEnvironment() == Env.SERVER)
+            this.setPhysXHandle(new PhysXRigidBodyWrapper(id));
+        this.setPosition(position);
+        this.setRotation(rotation);
+        this.setLinearVelocity(linearVelocity);
+        this.setAngularVelocity(angularVelocity);
+        this.setMass(mass);
+    }
+
+    public AbstractPhysicsObject(UUID id) {
+        this(id, Vec3.ZERO, new Quaterniond(), Vec3.ZERO, Vec3.ZERO, 0.0);
     }
 
     public AbstractPhysicsObject(CompoundTag nbt) {
+        this(nbt.getUUID("id"));
         deserializeNBT(nbt);
     }
 
-    public UUID getId() { return id; }
+    public UUID getId() {
+        return this.id;
+    }
 
-    public Vec3 getPosition() { return position; }
+    public Vec3 getPosition() {
+        return this.position;
+    }
 
-    @Environment(EnvType.SERVER)
     public void setPosition(Vec3 position) {
         this.position = position;
-        if (physxHandle != null) {
-            physxHandle.setPosition(position);
-        }
+        EnvExecutor.runInEnv(EnvType.SERVER, () -> () -> {
+            if (this.physxHandle != null)
+                this.physxHandle.setPosition(position);
+        });
     }
 
-    public Quaterniondc getRotation() { return rotation; }
+    public Quaterniondc getRotation() {
+        return this.rotation;
+    }
 
-    @Environment(EnvType.SERVER)
     public void setRotation(Quaterniondc rotation) {
         this.rotation = rotation;
-        if (physxHandle != null) {
-            physxHandle.setRotation(rotation);
-        }
+        EnvExecutor.runInEnv(EnvType.SERVER, () -> () -> {
+            if (this.physxHandle != null)
+                this.physxHandle.setRotation(rotation);
+        });
     }
 
-    public Vec3 getLinearVelocity() { return linearVelocity; }
+    public Vec3 getLinearVelocity() {
+        return this.linearVelocity;
+    }
 
-    @Environment(EnvType.SERVER)
     public void setLinearVelocity(Vec3 linearVelocity) {
         this.linearVelocity = linearVelocity;
-        if (physxHandle != null) {
-            physxHandle.setLinearVelocity(linearVelocity);
-        }
+        EnvExecutor.runInEnv(EnvType.SERVER, () -> () -> {
+            if (this.physxHandle != null)
+                this.physxHandle.setLinearVelocity(linearVelocity);
+        });
     }
 
-    public Vec3 getAngularVelocity() { return angularVelocity; }
+    public Vec3 getAngularVelocity() {
+        return this.angularVelocity;
+    }
 
-    @Environment(EnvType.SERVER)
     public void setAngularVelocity(Vec3 angularVelocity) {
         this.angularVelocity = angularVelocity;
-        if (physxHandle != null) {
-            physxHandle.setAngularVelocity(angularVelocity);
-        }
+        EnvExecutor.runInEnv(EnvType.SERVER, () -> () -> {
+            if (this.physxHandle != null)
+                this.physxHandle.setAngularVelocity(angularVelocity);
+        });
     }
 
-    public double getMass() { return mass; }
+    public double getMass() {
+        return this.mass;
+    }
 
-    @Environment(EnvType.SERVER)
     public void setMass(double mass) {
         this.mass = mass;
-        if (physxHandle != null) {
-            physxHandle.setMass(mass);
-        }
+        EnvExecutor.runInEnv(EnvType.SERVER, () -> () -> {
+            if (this.physxHandle != null)
+                this.physxHandle.setMass(mass);
+        });
     }
 
-    @Environment(EnvType.SERVER)
     public void applyForce(Vec3 force) {
-        if (physxHandle != null) {
-            physxHandle.applyForce(force);
-        }
+        if (this.physxHandle != null)
+            this.physxHandle.applyForce(force);
     }
 
-    @Environment(EnvType.SERVER)
     public void applyImpulse(Vec3 impulse) {
-        if (physxHandle != null) {
-            physxHandle.applyImpulse(impulse);
-        }
+        if (this.physxHandle != null)
+            this.physxHandle.applyImpulse(impulse);
     }
 
     public void updateFromPhysX() {
-        if (physxHandle != null) {
-            this.position = physxHandle.getPosition();
-            this.rotation = physxHandle.getRotation();
-            this.linearVelocity = physxHandle.getLinearVelocity();
-            this.angularVelocity = physxHandle.getAngularVelocity();
-            this.mass = physxHandle.getMass();
+        if (this.physxHandle != null) {
+            this.position = this.physxHandle.getPosition();
+            this.rotation = this.physxHandle.getRotation();
+            this.linearVelocity = this.physxHandle.getLinearVelocity();
+            this.angularVelocity = this.physxHandle.getAngularVelocity();
+            this.mass = this.physxHandle.getMass();
         }
     }
 
@@ -155,24 +171,24 @@ public abstract class AbstractPhysicsObject {
     }
 
     public void deserializeNBT(CompoundTag nbt) {
-        id = nbt.getUUID("id");
+        this.id = nbt.getUUID("id");
         if (nbt.contains("pos", CompoundTag.TAG_COMPOUND)) {
             CompoundTag tag = nbt.getCompound("pos");
-            this.position = new Vec3(tag.getDouble("x"), tag.getDouble("y"), tag.getDouble("z"));
+            this.setPosition(new Vec3(tag.getDouble("x"), tag.getDouble("y"), tag.getDouble("z")));
         }
         if (nbt.contains("rot", CompoundTag.TAG_COMPOUND)) {
             CompoundTag tag = nbt.getCompound("rot");
-            this.rotation = new Quaterniond(tag.getDouble("x"), tag.getDouble("y"), tag.getDouble("z"), tag.getDouble("w"));
+            this.setRotation(new Quaterniond(tag.getDouble("x"), tag.getDouble("y"), tag.getDouble("z"), tag.getDouble("w")));
         }
         if (nbt.contains("linearVel", CompoundTag.TAG_COMPOUND)) {
             CompoundTag tag = nbt.getCompound("linearVel");
-            this.linearVelocity = new Vec3(tag.getDouble("x"), tag.getDouble("y"), tag.getDouble("z"));
+            this.setLinearVelocity(new Vec3(tag.getDouble("x"), tag.getDouble("y"), tag.getDouble("z")));
         }
         if (nbt.contains("angularVel", CompoundTag.TAG_COMPOUND)) {
             CompoundTag tag = nbt.getCompound("angularVel");
-            this.angularVelocity = new Vec3(tag.getDouble("x"), tag.getDouble("y"), tag.getDouble("z"));
+            this.setAngularVelocity(new Vec3(tag.getDouble("x"), tag.getDouble("y"), tag.getDouble("z")));
         }
-        mass = nbt.getDouble("mass");
+        this.setMass(nbt.getDouble("mass"));
 
         deserializeAdditionalNBT(nbt);
     }
@@ -192,8 +208,7 @@ public abstract class AbstractPhysicsObject {
         this.physxHandle = handle;
     }
 
-    @Environment(EnvType.SERVER)
     public PhysXRigidBodyWrapper getPhysXHandle() {
-        return physxHandle;
+        return this.physxHandle;
     }
 }

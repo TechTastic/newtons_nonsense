@@ -11,11 +11,13 @@ import java.util.UUID;
 
 public abstract class AbstractPhysicsObjectVisual<T extends AbstractPhysicsObject> implements SimpleDynamicVisual, EffectVisual<AbstractPhysicsObjectEffect> {
     private final ClientLevel level;
-    private final UUID id;
+    private final T object;
+    private final T previousObject;
 
     public AbstractPhysicsObjectVisual(ClientLevel level, UUID id, VisualizationContext context) {
         this.level = level;
-        this.id = id;
+        this.object = (T) Backend.getOrCreateClientPhysicsWorld(level).getPhysicsObject(id);
+        this.previousObject = (T) Backend.getOrCreateClientPhysicsWorld(level).getPreviousPhysicsObject(id);
     }
 
     public ClientLevel getLevel() {
@@ -23,10 +25,10 @@ public abstract class AbstractPhysicsObjectVisual<T extends AbstractPhysicsObjec
     }
 
     public T getPhysicsObject() {
-        return (T) Backend.getOrCreateClientPhysicsWorld(level).getPhysicsObject(id);
+        return this.object;
     }
 
     public T getPreviousPhysicsObject() {
-        return (T) Backend.getOrCreateClientPhysicsWorld(level).getPreviousPhysicsObject(id);
+        return this.previousObject;
     }
 }

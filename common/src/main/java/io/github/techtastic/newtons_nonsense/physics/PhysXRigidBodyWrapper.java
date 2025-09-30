@@ -1,13 +1,10 @@
-package io.github.techtastic.newtons_nonsense.physx;
+package io.github.techtastic.newtons_nonsense.physics;
 
 import io.github.techtastic.newtons_nonsense.NewtonsNonsense;
-import io.github.techtastic.newtons_nonsense.physics.Backend;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Quaterniond;
 import org.joml.Quaterniondc;
-import org.joml.Vector3f;
 import org.lwjgl.system.MemoryStack;
-import physx.common.PxIDENTITYEnum;
 import physx.common.PxQuat;
 import physx.common.PxTransform;
 import physx.common.PxVec3;
@@ -23,14 +20,21 @@ public class PhysXRigidBodyWrapper {
 
     public PhysXRigidBodyWrapper(UUID id, PxShape[] shapes) {
         this.id = id;
+        this.addShapes(shapes);
+    }
 
+    public PhysXRigidBodyWrapper(UUID id) {
+        this(id, new PxShape[0]);
+    }
+
+    protected PxRigidDynamic getActor() {
+        return this.actor;
+    }
+
+    protected void addShapes(PxShape[] shapes) {
         for (PxShape shape : shapes) {
             this.actor.attachShape(shape);
         }
-    }
-
-    public PxRigidDynamic getActor() {
-        return this.actor;
     }
 
     public UUID getId() {

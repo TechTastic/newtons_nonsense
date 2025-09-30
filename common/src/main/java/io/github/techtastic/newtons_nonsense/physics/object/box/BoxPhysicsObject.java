@@ -8,11 +8,14 @@ import net.minecraft.core.RegistryAccess;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.UUID;
 
 public class BoxPhysicsObject extends AbstractPhysicsObject {
     private Vec3 dimensions;
@@ -22,13 +25,18 @@ public class BoxPhysicsObject extends AbstractPhysicsObject {
         super(nbt);
     }
 
-    public BoxPhysicsObject(Vec3 position, Vec3 dimensions, ServerLevel level, BlockState state) {
-        super();
-        this.position = position;
+    public BoxPhysicsObject(UUID id, Vec3 position, Vec3 dimensions, BlockState state) {
+        super(id);
         this.dimensions = dimensions;
         this.state = state;
 
+        this.setPosition(position);
+
         // TODO Use BlockState for Material later
+    }
+
+    public BoxPhysicsObject(Vec3 position, Vec3 dimensions, BlockState state) {
+        this(UUID.randomUUID(), position, dimensions, state);
     }
 
     public BlockState getState() {
@@ -66,6 +74,7 @@ public class BoxPhysicsObject extends AbstractPhysicsObject {
     @Override
     public AABB getBoundingBox() {
         Vec3 half = dimensions.scale(0.5);
+        Vec3 position = this.getPosition();
         return new AABB(
                 position.x - half.x, position.y - half.y, position.z - half.z,
                 position.x + half.x, position.y + half.y, position.z + half.z

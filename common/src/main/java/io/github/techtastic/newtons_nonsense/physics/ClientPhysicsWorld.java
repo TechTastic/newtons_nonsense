@@ -44,7 +44,7 @@ public class ClientPhysicsWorld {
                 prev.deserializeNBT(old.serializeNBT());
                 return prev;
             });
-            this.previousObjects.computeIfAbsent(id, (ignored) -> object.getType().create(old.serializeNBT()));
+            this.previousObjects.computeIfAbsent(id, (ignored) -> object.getType().fromTag(old.serializeNBT()));
             return object;
         });
         this.objects.putIfAbsent(object.getId(), object);

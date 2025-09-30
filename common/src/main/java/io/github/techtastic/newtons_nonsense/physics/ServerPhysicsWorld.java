@@ -3,15 +3,11 @@ package io.github.techtastic.newtons_nonsense.physics;
 import dev.architectury.networking.NetworkManager;
 import io.github.techtastic.newtons_nonsense.NewtonsNonsense;
 import io.github.techtastic.newtons_nonsense.physics.networking.PhysicsObjectPayload;
-import io.github.techtastic.newtons_nonsense.physx.PhysXRigidBodyWrapper;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
 import net.minecraft.core.RegistryAccess;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.NbtOps;
-import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
-import org.lwjgl.system.MemoryStack;
 import physx.PxTopLevelFunctions;
-import physx.common.PxQuat;
 import physx.common.PxTransform;
 import physx.common.PxVec3;
 import physx.geometry.PxPlaneGeometry;
@@ -31,6 +27,7 @@ public class ServerPhysicsWorld {
     private final PxScene scene;
     private final ServerLevel level;
     private final RegistryAccess access;
+    private boolean pause;
 
     protected ServerPhysicsWorld(Backend backend, ServerLevel level) {
         PxSceneDesc desc = new PxSceneDesc(Backend.getPhysics().getTolerancesScale());
@@ -50,11 +47,16 @@ public class ServerPhysicsWorld {
         PxMaterial material = Backend.getPhysics().createMaterial(.5f, .5f, .5f);
         plane.attachShape(Backend.getPhysics().createShape(geom, material));
         geom.destroy();
+        this.scene.addActor(plane);
     }
 
-    public void tick() {
-        this.scene.simulate(1/20f);
-        this.scene.fetchResults(true);
+    public void pause(boolean pause) {
+        this.pause = pause;
+    }
+
+    public void tryTick() {
+        if (!this.pause)
+            tick(1/60f);
 
         this.objects.forEach((id, object) -> {
             if (this.wrappers.containsKey(id)) {
@@ -65,28 +67,27 @@ public class ServerPhysicsWorld {
         });
     }
 
+    public void tick(float delta) {
+        this.scene.simulate(delta);
+        this.scene.fetchResults(true);
+    }
+
     public void addNewPhysicsObject(AbstractPhysicsObject object) {
+        if (this.objects.containsKey(object.getId()) || this.wrappers.containsKey(object.getId()))
+            throw new RuntimeException("Attempted to create duplicate Physics Object with ID " + object.getId() + ", ignoring...");
+
+        this.objects.put(object.getId(), object);
         PhysXRigidBodyWrapper wrapper = this.wrappers.compute(object.getId(), (id, old) -> {
-            if (old != null)
+            if (old != null) {
+                this.scene.removeActor(old.getActor());
                 old.cleanup();
+            }
 
-            return new PhysXRigidBodyWrapper(id, object.gatherCollisionShapes(new CollisionShapeBuilder(), this.access).getShapes());
+            return object.getPhysXHandle();
         });
-
-        wrapper.setPosition(object.getPosition());
-        wrapper.setRotation(object.getRotation());
-        wrapper.setLinearVelocity(object.getLinearVelocity());
-        wrapper.setAngularVelocity(object.getAngularVelocity());
-        wrapper.setMass(object.getMass());
+        if (wrapper != null)
+            this.scene.addActor(wrapper.getActor());
 
         NewtonsNonsense.LOGGER.info("Object {} Created!\nPosition: {}\nRotation: {}", object.getId(), object.getPosition(), object.getRotation());
-
-        this.objects.compute(object.getId(), (id, ignored) -> {
-            object.setPhysXHandle(wrapper);
-            this.scene.addActor(wrapper.getActor());
-            return object;
-        });
-
-        //NewtonsNonsense.LOGGER.info("Has Object been Added Successfully? {} and {}", this.objects.containsKey(object.getId()), this.wrappers.containsKey(object.getId()));
     }
 }

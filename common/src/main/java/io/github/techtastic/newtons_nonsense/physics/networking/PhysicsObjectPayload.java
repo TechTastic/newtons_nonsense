@@ -20,7 +20,7 @@ public record PhysicsObjectPayload<T extends AbstractPhysicsObject>(T object) im
             (payload) -> RegistryUtils.getPhysicsObjectTypesRegistry().getKey(payload.object.getType()).toString(),
             ByteBufCodecs.COMPOUND_TAG,
             (payload) -> payload.object.getType().toTag(payload.object()),
-            (type, nbt) -> new PhysicsObjectPayload<>(RegistryUtils.getPhysicsObjectTypesRegistry().get(ResourceLocation.tryParse(type)).create(nbt))
+            (type, nbt) -> new PhysicsObjectPayload<>(RegistryUtils.getPhysicsObjectTypesRegistry().get(ResourceLocation.tryParse(type)).fromTag(nbt))
     );
 
     @Override

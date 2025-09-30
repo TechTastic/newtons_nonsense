@@ -6,12 +6,11 @@ import io.github.techtastic.newtons_nonsense.physics.AbstractPhysicsObject;
 import io.github.techtastic.newtons_nonsense.physics.client.AbstractPhysicsObjectVisual;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.Registry;
-import net.minecraft.data.models.blockstates.PropertyDispatch;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.Level;
 import org.apache.commons.lang3.function.TriFunction;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;
 import java.util.function.Function;
@@ -28,7 +27,7 @@ public class PhysicsObjectType<T extends AbstractPhysicsObject> {
         this.visual = visual;
     }
 
-    public T create(CompoundTag nbt) {
+    public T fromTag(CompoundTag nbt) {
         return factory.apply(nbt);
     }
 
