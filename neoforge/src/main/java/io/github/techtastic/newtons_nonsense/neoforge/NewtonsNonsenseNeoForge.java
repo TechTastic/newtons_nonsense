@@ -1,12 +1,14 @@
 package io.github.techtastic.newtons_nonsense.neoforge;
 
 import dev.architectury.platform.Platform;
+import dev.architectury.registry.registries.RegistrarManager;
 import dev.engine_room.flywheel.api.event.ReloadLevelRendererEvent;
 import io.github.techtastic.newtons_nonsense.NewtonsNonsense;
 import io.github.techtastic.newtons_nonsense.PhysicsObjectTypes;
 import io.github.techtastic.newtons_nonsense.registries.Material;
 import io.github.techtastic.newtons_nonsense.registries.PhysicsObjectType;
 import net.minecraft.core.Registry;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.neoforged.api.distmarker.Dist;
@@ -17,6 +19,7 @@ import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.level.ChunkEvent;
 import net.neoforged.neoforge.registries.DataPackRegistryEvent;
 import net.neoforged.neoforge.registries.NewRegistryEvent;
+import net.neoforged.neoforge.registries.RegisterEvent;
 import net.neoforged.neoforge.registries.RegistryBuilder;
 
 @Mod(NewtonsNonsense.MOD_ID)
@@ -31,21 +34,28 @@ public final class NewtonsNonsenseNeoForge {
         NeoForge.EVENT_BUS.addListener(this::onFlywheelReload);
 
         bus.addListener(this::commonSetup);
+        bus.addListener(this::registerTypes);
         bus.addListener(this::registerRegistries);
         bus.addListener(this::registerDatapackRegistries);
     }
 
     private void commonSetup(FMLCommonSetupEvent event) {
-        PhysicsObjectTypes.register();
+        PhysicsObjectTypes.BOX_OBJECT_TYPE = RegistrarManager.get(NewtonsNonsense.MOD_ID).get(PhysicsObjectType.REGISTRY_KEY)
+                .delegate(ResourceLocation.fromNamespaceAndPath(NewtonsNonsense.MOD_ID, "box"));
     }
 
     private void registerRegistries(NewRegistryEvent event) {
-        PHYSICS_OBJECT_TYPES_REGISTRY = event.create(new RegistryBuilder<>(PhysicsObjectType.REGISTRY_KEY).sync(true));
+        PHYSICS_OBJECT_TYPES_REGISTRY = event.create(new RegistryBuilder<>(PhysicsObjectType.REGISTRY_KEY).sync(true).maxId(256));
+    }
+
+    private void registerTypes(RegisterEvent event) {
+        PhysicsObjectTypes.registerNeoForge((id, supp) ->
+                event.register(PhysicsObjectType.REGISTRY_KEY, ResourceLocation
+                        .fromNamespaceAndPath(NewtonsNonsense.MOD_ID, id), supp));
     }
 
     private void registerDatapackRegistries(DataPackRegistryEvent.NewRegistry event) {
-        if (Platform.getEnv() == Dist.DEDICATED_SERVER)
-            event.dataPackRegistry(Material.REGISTRY_KEY, Material.CODEC, null);
+        event.dataPackRegistry(Material.REGISTRY_KEY, Material.CODEC, null);
     }
 
     private void onFlywheelReload(ReloadLevelRendererEvent event) {

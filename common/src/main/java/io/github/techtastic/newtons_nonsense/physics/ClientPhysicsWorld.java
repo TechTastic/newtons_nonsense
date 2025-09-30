@@ -9,26 +9,30 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class ClientPhysicsWorld {
-    private final ClientLevel level;
+public class ClientPhysicsWorld extends PhysicsWorld<ClientLevel> {
     private final Map<UUID, AbstractPhysicsObject> previousObjects = new ConcurrentHashMap<>();
     private final Map<UUID, AbstractPhysicsObject> objects = new ConcurrentHashMap<>();
     private final Map<UUID, AbstractPhysicsObjectEffect> effects = new ConcurrentHashMap<>();
 
     protected ClientPhysicsWorld(ClientLevel level) {
-        this.level = level;
+        super(level);
     }
 
-    public void onVisualReload(ClientLevel level) {
+    public void onVisualReload() {
         this.objects.keySet().forEach(id -> {
             if (getPhysicsObject(id) instanceof AbstractPhysicsObject object) {
                 VisualizationHelper.queueAdd(this.effects.computeIfAbsent(object.getId(), uuid ->
-                        new AbstractPhysicsObjectEffect(level, uuid)));
+                        new AbstractPhysicsObjectEffect(this.getLevel(), uuid)));
             }
         });
     }
 
-    @Nullable
+    @Override
+    public Map<UUID, AbstractPhysicsObject> getAllPhysicsObjects() {
+        return Map.copyOf(this.objects);
+    }
+
+    @Override
     public AbstractPhysicsObject getPhysicsObject(UUID id) {
         return this.objects.getOrDefault(id, null);
     }
@@ -38,7 +42,8 @@ public class ClientPhysicsWorld {
         return this.previousObjects.getOrDefault(id, null);
     }
 
-    public void update(AbstractPhysicsObject object) {
+    @Override
+    public void addPhysicsObject(AbstractPhysicsObject object) {
         this.objects.computeIfPresent(object.getId(), (id, old) -> {
             this.previousObjects.computeIfPresent(id, (ignored, prev) -> {
                 prev.deserializeNBT(old.serializeNBT());
@@ -51,10 +56,21 @@ public class ClientPhysicsWorld {
 
         this.effects.computeIfPresent(object.getId(), (id, effect) -> {
             VisualizationHelper.queueRemove(effect);
-            AbstractPhysicsObjectEffect newEffect = new AbstractPhysicsObjectEffect(level, id);
+            AbstractPhysicsObjectEffect newEffect = new AbstractPhysicsObjectEffect(this.getLevel(), id);
             VisualizationHelper.queueAdd(newEffect);
             return newEffect;
         });
-        this.effects.putIfAbsent(object.getId(), new AbstractPhysicsObjectEffect(level, object.getId()));
+        this.effects.putIfAbsent(object.getId(), new AbstractPhysicsObjectEffect(this.getLevel(), object.getId()));
+    }
+
+    @Override
+    public void removePhysicsObject(AbstractPhysicsObject object) {
+        this.effects.computeIfPresent(object.getId(), (id, effect) -> {
+            VisualizationHelper.queueRemove(effect);
+            return null;
+        });
+        this.effects.remove(object.getId());
+        this.previousObjects.remove(object.getId());
+        this.objects.remove(object.getId());
     }
 }

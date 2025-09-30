@@ -83,6 +83,6 @@ public class BoxPhysicsObject extends AbstractPhysicsObject {
 
     @Override
     public PhysicsObjectType<BoxPhysicsObject> getType() {
-        return PhysicsObjectTypes.BOX_OBJECT_TYPE.get();
+        return (PhysicsObjectType<BoxPhysicsObject>) PhysicsObjectTypes.BOX_OBJECT_TYPE.get();
     }
 }

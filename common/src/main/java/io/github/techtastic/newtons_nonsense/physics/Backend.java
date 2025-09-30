@@ -48,13 +48,14 @@ public class Backend {
     }
 
     @NotNull
-    public static ServerPhysicsWorld getOrCreateServerPhysicsWorld(@NotNull ServerLevel level) {
-        return SERVER_WORLDS.computeIfAbsent(level.dimension(), ignored -> new ServerPhysicsWorld(Backend.getOrCreateInstance(level.getServer()), level));
-    }
-
-    @NotNull
-    public static ClientPhysicsWorld getOrCreateClientPhysicsWorld(@NotNull ClientLevel level) {
-        return CLIENT_WORLDS.computeIfAbsent(level.dimension(), ignored -> new ClientPhysicsWorld(level));
+    public static PhysicsWorld<?> getOrCreatePhysicsWorld(@NotNull Level level) {
+        if (level instanceof ServerLevel serverLevel)
+            return SERVER_WORLDS.computeIfAbsent(level.dimension(), ignored ->
+                    new ServerPhysicsWorld(Backend.getOrCreateInstance(serverLevel.getServer()), serverLevel));
+        if (level instanceof ClientLevel clientLevel)
+            return CLIENT_WORLDS.computeIfAbsent(level.dimension(), ignored ->
+                    new ClientPhysicsWorld(clientLevel));
+        throw new RuntimeException("Invalid Level for Physics! This should NEVER trigger!");
     }
 
     public static PxFoundation getFoundation() {

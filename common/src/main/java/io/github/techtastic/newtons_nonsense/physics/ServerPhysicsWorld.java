@@ -3,10 +3,8 @@ package io.github.techtastic.newtons_nonsense.physics;
 import dev.architectury.networking.NetworkManager;
 import io.github.techtastic.newtons_nonsense.NewtonsNonsense;
 import io.github.techtastic.newtons_nonsense.physics.networking.PhysicsObjectPayload;
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
-import net.minecraft.core.RegistryAccess;
 import net.minecraft.server.level.ServerLevel;
+import org.jetbrains.annotations.Nullable;
 import physx.PxTopLevelFunctions;
 import physx.common.PxTransform;
 import physx.common.PxVec3;
@@ -20,16 +18,15 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class ServerPhysicsWorld {
+public class ServerPhysicsWorld extends PhysicsWorld<ServerLevel> {
     private final Map<UUID, AbstractPhysicsObject> objects = new ConcurrentHashMap<>();
     private final Map<UUID, PhysXRigidBodyWrapper> wrappers = new ConcurrentHashMap<>();
 
     private final PxScene scene;
-    private final ServerLevel level;
-    private final RegistryAccess access;
     private boolean pause;
 
     protected ServerPhysicsWorld(Backend backend, ServerLevel level) {
+        super(level);
         PxSceneDesc desc = new PxSceneDesc(Backend.getPhysics().getTolerancesScale());
         // TODO In the future, get gravity from Level
         desc.setGravity(new PxVec3(0f, -9.81f, 0f));
@@ -37,9 +34,6 @@ public class ServerPhysicsWorld {
         desc.setFilterShader(PxTopLevelFunctions.DefaultFilterShader());
         this.scene = Backend.getPhysics().createScene(desc);
         desc.destroy();
-
-        this.level = level;
-        this.access = level.registryAccess();
 
         // TODO Remove, this is for debugging
         PxRigidStatic plane = Backend.getPhysics().createRigidStatic(new PxTransform(new PxVec3(0f, -60f, 0f)));
@@ -59,11 +53,9 @@ public class ServerPhysicsWorld {
             tick(1/60f);
 
         this.objects.forEach((id, object) -> {
-            if (this.wrappers.containsKey(id)) {
-                object.updateFromPhysX();
-                NewtonsNonsense.LOGGER.info("Object {} Updated!\nPosition: {}\nRotation: {}", id, object.getPosition(), object.getRotation());
-                NetworkManager.sendToPlayers(this.level.getPlayers(player -> true), new PhysicsObjectPayload<>(object));
-            }
+            object.updateFromPhysX();
+            NewtonsNonsense.LOGGER.info("Object {} Updated!\nPosition: {}\nRotation: {}", id, object.getPosition(), object.getRotation());
+            NetworkManager.sendToPlayers(this.getLevel().getPlayers(player -> true), new PhysicsObjectPayload<>(object));
         });
     }
 
@@ -72,7 +64,18 @@ public class ServerPhysicsWorld {
         this.scene.fetchResults(true);
     }
 
-    public void addNewPhysicsObject(AbstractPhysicsObject object) {
+    @Override
+    public Map<UUID, AbstractPhysicsObject> getAllPhysicsObjects() {
+        return Map.copyOf(this.objects);
+    }
+
+    @Override
+    public @Nullable AbstractPhysicsObject getPhysicsObject(UUID id) {
+        return this.objects.getOrDefault(id, null);
+    }
+
+    @Override
+    public void addPhysicsObject(AbstractPhysicsObject object) {
         if (this.objects.containsKey(object.getId()) || this.wrappers.containsKey(object.getId()))
             throw new RuntimeException("Attempted to create duplicate Physics Object with ID " + object.getId() + ", ignoring...");
 
@@ -89,5 +92,17 @@ public class ServerPhysicsWorld {
             this.scene.addActor(wrapper.getActor());
 
         NewtonsNonsense.LOGGER.info("Object {} Created!\nPosition: {}\nRotation: {}", object.getId(), object.getPosition(), object.getRotation());
+    }
+
+    @Override
+    public void removePhysicsObject(AbstractPhysicsObject object) {
+        this.wrappers.computeIfPresent(object.getId(), (id, wrapper) -> {
+            this.scene.removeActor(wrapper.getActor());
+            wrapper.cleanup();
+            return null;
+        });
+
+        this.wrappers.remove(object.getId());
+        this.objects.remove(object.getId());
     }
 }

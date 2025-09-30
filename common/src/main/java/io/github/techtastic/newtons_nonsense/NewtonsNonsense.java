@@ -6,25 +6,19 @@ import dev.architectury.event.events.common.CommandRegistrationEvent;
 import dev.architectury.event.events.common.LifecycleEvent;
 import dev.architectury.event.events.common.TickEvent;
 import dev.architectury.networking.NetworkManager;
-import dev.architectury.platform.Platform;
 import dev.architectury.registry.registries.DeferredRegister;
 import dev.architectury.registry.registries.RegistrySupplier;
-import dev.architectury.utils.Env;
-import dev.architectury.utils.EnvExecutor;
 import io.github.techtastic.newtons_nonsense.physics.Backend;
+import io.github.techtastic.newtons_nonsense.physics.ClientPhysicsWorld;
+import io.github.techtastic.newtons_nonsense.physics.PhysicsWorld;
+import io.github.techtastic.newtons_nonsense.physics.ServerPhysicsWorld;
 import io.github.techtastic.newtons_nonsense.physics.networking.PhysicsObjectPayload;
-import io.github.techtastic.newtons_nonsense.physics.object.box.BoxPhysicsObject;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.Item;
-import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.chunk.LevelChunk;
-import net.minecraft.world.phys.Vec3;
-import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import physx.PxTopLevelFunctions;
 
@@ -33,24 +27,7 @@ public final class NewtonsNonsense {
     public static final Logger LOGGER = LogUtils.getLogger();
 
     private static final DeferredRegister<Item> ITEMS = DeferredRegister.create(MOD_ID, Registries.ITEM);
-
-    private static final RegistrySupplier<Item> TEST_ITEM = ITEMS.register("test_item", () -> new Item(new Item.Properties()) {
-        @Override
-        public @NotNull InteractionResult useOn(UseOnContext useOnContext) {
-            if (useOnContext.getHand() != InteractionHand.MAIN_HAND)
-                return InteractionResult.SUCCESS;
-
-            if (useOnContext.getLevel() instanceof ServerLevel level) {
-                Vec3 pos = Vec3.atCenterOf(useOnContext.getClickedPos()).relative(useOnContext.getClickedFace(), 1);
-                BoxPhysicsObject boxObject = new BoxPhysicsObject(pos, new Vec3(.5, .5, .5), level.getBlockState(useOnContext.getClickedPos()));
-
-                Backend.getOrCreateServerPhysicsWorld(level).addNewPhysicsObject(boxObject);
-                LOGGER.info("Test Stick Used Successfully!");
-            }
-
-            return super.useOn(useOnContext);
-        }
-    });
+    private static final RegistrySupplier<Item> TEST_ITEM = ITEMS.register("test_item", () -> new Item(new Item.Properties()));
 
     public static void init() {
         int version = PxTopLevelFunctions.getPHYSICS_VERSION();
@@ -63,16 +40,10 @@ public final class NewtonsNonsense {
         LifecycleEvent.SERVER_STARTED.register(Backend::getOrCreateInstance);
         LifecycleEvent.SERVER_STOPPED.register(server -> Backend.getOrCreateInstance(server).cleanup());
 
-        LifecycleEvent.SERVER_LEVEL_LOAD.register(level -> {
-            if (Platform.getEnvironment() == Env.SERVER)
-                Backend.getOrCreateServerPhysicsWorld(level);
-        });
+        LifecycleEvent.SERVER_LEVEL_LOAD.register(level -> Backend.getOrCreatePhysicsWorld(level));
         //LifecycleEvent.SERVER_LEVEL_UNLOAD.register(level -> Backend.getOrCreateServerPhysicsWorld(level));
-        TickEvent.SERVER_LEVEL_POST.register(level -> {
-            if (Platform.getEnvironment() == Env.SERVER)
-                Backend.getOrCreateServerPhysicsWorld(level).tryTick();
-        });
-        ClientLifecycleEvent.CLIENT_LEVEL_LOAD.register(Backend::getOrCreateClientPhysicsWorld);
+        TickEvent.SERVER_LEVEL_POST.register(level -> ((ServerPhysicsWorld) Backend.getOrCreatePhysicsWorld(level)).tryTick());
+        ClientLifecycleEvent.CLIENT_LEVEL_LOAD.register(Backend::getOrCreatePhysicsWorld);
 
         CommandRegistrationEvent.EVENT.register(NNCommands::register);
 
@@ -80,7 +51,7 @@ public final class NewtonsNonsense {
                 context.queue(() -> {
                     ClientLevel level = Minecraft.getInstance().level;
                     assert level != null;
-                    Backend.getOrCreateClientPhysicsWorld(level).update(payload.object());
+                    Backend.getOrCreatePhysicsWorld(level).addPhysicsObject(payload.object());
                 })
         );
 
@@ -88,7 +59,9 @@ public final class NewtonsNonsense {
     }
 
     public static void onVisualReload(ClientLevel level) {
-        Backend.getOrCreateClientPhysicsWorld(level).onVisualReload(level);
+        PhysicsWorld<?> world = Backend.getOrCreatePhysicsWorld(level);
+        if (world instanceof ClientPhysicsWorld clientWorld)
+            clientWorld.onVisualReload();
     }
 
     public static void onChunkGenerate(ServerLevel level, LevelChunk chunk) {

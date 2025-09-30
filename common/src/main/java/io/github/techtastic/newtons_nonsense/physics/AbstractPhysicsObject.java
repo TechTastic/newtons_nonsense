@@ -27,8 +27,7 @@ public abstract class AbstractPhysicsObject {
 
     public AbstractPhysicsObject(UUID id, Vec3 position, Quaterniondc rotation, Vec3 linearVelocity, Vec3 angularVelocity, double mass) {
         this.id = id;
-        if (Platform.getEnvironment() == Env.SERVER)
-            this.setPhysXHandle(new PhysXRigidBodyWrapper(id));
+        this.setPhysXHandle(new PhysXRigidBodyWrapper(id));
         this.setPosition(position);
         this.setRotation(rotation);
         this.setLinearVelocity(linearVelocity);
