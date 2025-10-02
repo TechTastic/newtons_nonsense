@@ -4,7 +4,7 @@ import dev.engine_room.flywheel.api.visual.Effect;
 import dev.engine_room.flywheel.api.visualization.VisualizationContext;
 import io.github.techtastic.newtons_nonsense.physics.AbstractPhysicsObject;
 import io.github.techtastic.newtons_nonsense.physics.Backend;
-import io.github.techtastic.newtons_nonsense.physics.PhysicsWorld;
+import io.github.techtastic.newtons_nonsense.physics.ClientPhysicsWorld;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.world.level.LevelAccessor;
 import org.jetbrains.annotations.NotNull;
@@ -27,9 +27,10 @@ public class AbstractPhysicsObjectEffect implements Effect {
 
     @Override
     public @NotNull AbstractPhysicsObjectVisual<? extends AbstractPhysicsObject> visualize(VisualizationContext visualizationContext, float v) {
-        PhysicsWorld<?> world = Backend.getOrCreatePhysicsWorld(this.level);
+        ClientPhysicsWorld world = (ClientPhysicsWorld) Backend.getOrCreatePhysicsWorld(this.level);
         AbstractPhysicsObject object = world.getPhysicsObject(this.id);
+        AbstractPhysicsObject previousObject = world.getPhysicsObject(this.id);
         assert object != null;
-        return object.getType().createVisual(this.level, this.id, visualizationContext);
+        return object.getType().createVisual(this.level, object, previousObject, visualizationContext);
     }
 }

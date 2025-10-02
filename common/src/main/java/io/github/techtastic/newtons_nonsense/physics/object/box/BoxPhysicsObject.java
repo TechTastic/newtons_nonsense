@@ -23,18 +23,16 @@ public class BoxPhysicsObject extends AbstractPhysicsObject {
         super(nbt);
     }
 
-    public BoxPhysicsObject(UUID id, Vec3 position, Vec3 dimensions, BlockState state) {
+    public BoxPhysicsObject(UUID id, Vec3 dimensions, BlockState state) {
         super(id);
         this.dimensions = dimensions;
         this.state = state;
 
-        this.setPosition(position);
-
         // TODO Use BlockState for Material later
     }
 
-    public BoxPhysicsObject(Vec3 position, Vec3 dimensions, BlockState state) {
-        this(UUID.randomUUID(), position, dimensions, state);
+    public BoxPhysicsObject(Vec3 dimensions, BlockState state) {
+        this(UUID.randomUUID(), dimensions, state);
     }
 
     public BlockState getState() {

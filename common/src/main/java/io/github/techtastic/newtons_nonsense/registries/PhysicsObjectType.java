@@ -6,10 +6,10 @@ import io.github.techtastic.newtons_nonsense.physics.AbstractPhysicsObject;
 import io.github.techtastic.newtons_nonsense.physics.client.AbstractPhysicsObjectVisual;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.Registry;
+import net.minecraft.data.models.blockstates.PropertyDispatch;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
-import org.apache.commons.lang3.function.TriFunction;
 
 import java.util.UUID;
 import java.util.function.Function;
@@ -19,9 +19,9 @@ public class PhysicsObjectType<T extends AbstractPhysicsObject> {
             ResourceKey.createRegistryKey(ResourceLocation.fromNamespaceAndPath(NewtonsNonsense.MOD_ID, "physics_object_types"));
 
     private final Function<CompoundTag, T> factory;
-    private final TriFunction<ClientLevel, UUID, VisualizationContext, AbstractPhysicsObjectVisual<T>> visual;
+    private final PropertyDispatch.QuadFunction<ClientLevel, AbstractPhysicsObject, AbstractPhysicsObject, VisualizationContext, AbstractPhysicsObjectVisual<T>> visual;
 
-    public PhysicsObjectType(Function<CompoundTag, T> factory, TriFunction<ClientLevel, UUID, VisualizationContext, AbstractPhysicsObjectVisual<T>> visual) {
+    public PhysicsObjectType(Function<CompoundTag, T> factory, PropertyDispatch.QuadFunction<ClientLevel, AbstractPhysicsObject, AbstractPhysicsObject, VisualizationContext, AbstractPhysicsObjectVisual<T>> visual) {
         this.factory = factory;
         this.visual = visual;
     }
@@ -35,7 +35,7 @@ public class PhysicsObjectType<T extends AbstractPhysicsObject> {
         return object.serializeNBT();
     }
 
-    public AbstractPhysicsObjectVisual<T> createVisual(ClientLevel level, UUID id, VisualizationContext context) {
-        return this.visual.apply(level, id, context);
+    public AbstractPhysicsObjectVisual<T> createVisual(ClientLevel level, AbstractPhysicsObject object, AbstractPhysicsObject previousObject, VisualizationContext context) {
+        return this.visual.apply(level, object, previousObject, context);
     }
 }

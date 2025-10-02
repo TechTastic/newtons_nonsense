@@ -7,6 +7,7 @@ import dev.engine_room.flywheel.lib.instance.InstanceTypes;
 import dev.engine_room.flywheel.lib.instance.TransformedInstance;
 import dev.engine_room.flywheel.lib.model.Models;
 import io.github.techtastic.newtons_nonsense.NewtonsNonsense;
+import io.github.techtastic.newtons_nonsense.physics.AbstractPhysicsObject;
 import io.github.techtastic.newtons_nonsense.physics.client.AbstractPhysicsObjectVisual;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
@@ -16,15 +17,13 @@ import org.joml.Quaterniond;
 import org.joml.Quaternionf;
 import org.joml.Quaternionfc;
 
-import java.util.UUID;
-
 public class BoxPhysicsObjectVisual extends AbstractPhysicsObjectVisual<BoxPhysicsObject> {
     private final TransformedInstance instance;
     private final VisualEmbedding embedding;
     private final Vec3i renderOrigin;
 
-    public BoxPhysicsObjectVisual(ClientLevel level, UUID id, VisualizationContext context) {
-        super(level, id, context);
+    public BoxPhysicsObjectVisual(ClientLevel level, AbstractPhysicsObject object, AbstractPhysicsObject previousObject, VisualizationContext context) {
+        super(level, object, previousObject, context);
 
         Model model = Models.block(this.getPhysicsObject().getState());
         this.instance = context.instancerProvider().instancer(InstanceTypes.TRANSFORMED, model).createInstance();

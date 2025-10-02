@@ -19,10 +19,10 @@ public class Material {
             ExtraCodecs.POSITIVE_FLOAT.optionalFieldOf("dynamicFriction", 0.5f).forGetter(PxMaterial::getDynamicFriction),
             ExtraCodecs.POSITIVE_FLOAT.optionalFieldOf("staticFriction", 0.5f).forGetter(PxMaterial::getStaticFriction),
             ExtraCodecs.POSITIVE_FLOAT.optionalFieldOf("restitution", 0.5f).forGetter(PxMaterial::getRestitution)
-    ).apply(instance, (dyn, stat, res) -> Backend.getPhysics().createMaterial(stat, dyn, res)));
+    ).apply(instance, (dyn, stat, res) -> Backend.PHYSICS.createMaterial(stat, dyn, res)));
 
     public static void bootstrap(BootstrapContext<PxMaterial> context) {
         context.register(ResourceKey.create(REGISTRY_KEY, ResourceLocation.fromNamespaceAndPath(NewtonsNonsense.MOD_ID, "default")),
-                Backend.getPhysics().createMaterial(.5f, .5f, .5f));
+                Backend.PHYSICS.createMaterial(.5f, .5f, .5f));
     }
 }

@@ -32,7 +32,7 @@ public class CollisionShapeBuilder {
     public CollisionShapeBuilder box(RegistryAccess access, double halfLengthX, double halfLengthY, double halfLengthZ, ResourceLocation material) {
         PxBoxGeometry geom = new PxBoxGeometry((float)halfLengthX, (float)halfLengthY, (float)halfLengthZ);
         PxMaterial mat = getMaterial(access, material);
-        this.shapes.add(Backend.getPhysics().createShape(geom, mat));
+        this.shapes.add(Backend.PHYSICS.createShape(geom, mat));
         geom.destroy();
         return this;
     }
@@ -54,7 +54,7 @@ public class CollisionShapeBuilder {
     public CollisionShapeBuilder sphere(RegistryAccess access, double radius, ResourceLocation material) {
         PxSphereGeometry geom = new PxSphereGeometry((float) radius);
         PxMaterial mat = getMaterial(access, material);
-        this.shapes.add(Backend.getPhysics().createShape(geom, mat));
+        this.shapes.add(Backend.PHYSICS.createShape(geom, mat));
         geom.destroy();
         return this;
     }
@@ -68,7 +68,7 @@ public class CollisionShapeBuilder {
     public CollisionShapeBuilder capsule(RegistryAccess access, double radius, double halfHeight, ResourceLocation material) {
         PxCapsuleGeometry geom = new PxCapsuleGeometry((float)radius, (float)halfHeight);
         PxMaterial mat = getMaterial(access, material);
-        this.shapes.add(Backend.getPhysics().createShape(geom, mat));
+        this.shapes.add(Backend.PHYSICS.createShape(geom, mat));
         geom.destroy();
         return this;
     }

@@ -32,8 +32,6 @@ public abstract class AbstractPhysicsObject {
 
     public AbstractPhysicsObject(UUID id, Vec3 position, Quaterniondc rotation, Vec3 linearVelocity, Vec3 angularVelocity, double mass) {
         this.id = id;
-        if (Platform.getEnvironment() == Env.SERVER || Minecraft.getInstance().level == null || !Minecraft.getInstance().level.isClientSide)
-            this.body = Backend.getPhysics().createRigidDynamic(new PxTransform());
         this.setPosition(position);
         this.setRotation(rotation);
         this.setLinearVelocity(linearVelocity);
@@ -55,8 +53,6 @@ public abstract class AbstractPhysicsObject {
     }
 
     public Vec3 getPosition() {
-        NewtonsNonsense.LOGGER.info("getPosition() called for object {}, body is null: {}", this.id, this.body == null);
-
         if (this.body == null) {
             if (!Conversions.isValid(this.position))
                 return Vec3.ZERO;
@@ -226,6 +222,36 @@ public abstract class AbstractPhysicsObject {
     public abstract AABB getBoundingBox();
 
     public void setPhysXBody(PxRigidDynamic body) {
+        PxTransform pose = body.getGlobalPose();
+
+        PxVec3 pos = pose.getP();
+        pos.setX((float) this.getPosition().x);
+        pos.setY((float) this.getPosition().y);
+        pos.setZ((float) this.getPosition().z);
+        pose.setP(pos);
+
+        PxQuat quat = pose.getQ();
+        pos.setX((float) this.getRotation().x());
+        pos.setY((float) this.getRotation().y());
+        pos.setZ((float) this.getRotation().z());
+        pose.setQ(quat);
+
+        body.setGlobalPose(pose, true);
+
+        PxVec3 linear = body.getLinearVelocity();
+        pos.setX((float) this.getLinearVelocity().x);
+        pos.setY((float) this.getLinearVelocity().y);
+        pos.setZ((float) this.getLinearVelocity().z);
+        body.setLinearVelocity(linear);
+
+        PxVec3 angular = body.getAngularVelocity();
+        pos.setX((float) this.getAngularVelocity().x);
+        pos.setY((float) this.getAngularVelocity().y);
+        pos.setZ((float) this.getAngularVelocity().z);
+        body.setAngularVelocity(angular);
+
+        body.setMass((float) this.getMass());
+
         this.body = body;
     }
 

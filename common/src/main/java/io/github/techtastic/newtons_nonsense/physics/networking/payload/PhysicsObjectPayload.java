@@ -1,4 +1,4 @@
-package io.github.techtastic.newtons_nonsense.physics.networking;
+package io.github.techtastic.newtons_nonsense.physics.networking.payload;
 
 import io.github.techtastic.newtons_nonsense.NewtonsNonsense;
 import io.github.techtastic.newtons_nonsense.physics.AbstractPhysicsObject;
