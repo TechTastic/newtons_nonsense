@@ -1,10 +1,7 @@
 package io.github.techtastic.newtons_nonsense.physics;
 
-import dev.architectury.platform.Platform;
-import dev.architectury.utils.Env;
-import dev.architectury.utils.EnvExecutor;
 import io.github.techtastic.newtons_nonsense.registries.PhysicsObjectType;
-import net.fabricmc.api.EnvType;
+import io.github.techtastic.newtons_nonsense.util.Conversions;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.nbt.CompoundTag;
@@ -13,6 +10,10 @@ import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
 import org.joml.Quaterniond;
 import org.joml.Quaterniondc;
+import physx.common.PxQuat;
+import physx.common.PxTransform;
+import physx.common.PxVec3;
+import physx.physics.PxRigidDynamic;
 
 import java.util.UUID;
 
@@ -24,12 +25,12 @@ public abstract class AbstractPhysicsObject {
     private Vec3 angularVelocity;
     private double mass;
 
-    private PhysXRigidBodyWrapper physxHandle;
+    private PxRigidDynamic body;
 
     public AbstractPhysicsObject(UUID id, Vec3 position, Quaterniondc rotation, Vec3 linearVelocity, Vec3 angularVelocity, double mass) {
         this.id = id;
         if (Minecraft.getInstance().level != null)
-            this.setPhysXHandle(new PhysXRigidBodyWrapper(id));
+            this.body = Backend.getPhysics().createRigidDynamic(new PxTransform());
         this.setPosition(position);
         this.setRotation(rotation);
         this.setLinearVelocity(linearVelocity);
@@ -51,106 +52,122 @@ public abstract class AbstractPhysicsObject {
     }
 
     public Vec3 getPosition() {
-        return this.position;
+        if (this.body == null)
+            return this.position;
+        else
+            return Conversions.fromPxVec(this.body.getGlobalPose().getP());
     }
 
     public void setPosition(Vec3 position) {
         this.position = position;
-        if (this.physxHandle != null)
-            this.physxHandle.setPosition(position);
+        if (this.body != null) {
+            PxVec3 pos = this.body.getGlobalPose().getP();
+            pos.setX((float) position.x);
+            pos.setY((float) position.y);
+            pos.setZ((float) position.z);
+            this.body.getGlobalPose().setP(pos);
+        }
     }
 
     public Quaterniondc getRotation() {
-        return this.rotation;
+        if (this.body == null)
+            return this.rotation;
+        else
+            return Conversions.fromPxQuat(this.body.getGlobalPose().getQ());
     }
 
     public void setRotation(Quaterniondc rotation) {
         this.rotation = rotation;
-        if (this.physxHandle != null)
-            this.physxHandle.setRotation(rotation);
+        if (this.body != null) {
+            PxQuat quat = this.body.getGlobalPose().getQ();
+            quat.setX((float) rotation.x());
+            quat.setY((float) rotation.y());
+            quat.setZ((float) rotation.z());
+            quat.setW((float) rotation.w());
+            this.body.getGlobalPose().setQ(quat);
+        }
     }
 
     public Vec3 getLinearVelocity() {
-        return this.linearVelocity;
+        if (this.body == null)
+            return this.linearVelocity;
+        else
+            return Conversions.fromPxVec(this.body.getLinearVelocity());
     }
 
     public void setLinearVelocity(Vec3 linearVelocity) {
         this.linearVelocity = linearVelocity;
-        if (this.physxHandle != null)
-            this.physxHandle.setLinearVelocity(linearVelocity);
+        if (this.body != null) {
+            PxVec3 vel = this.body.getLinearVelocity();
+            vel.setX((float) linearVelocity.x);
+            vel.setY((float) linearVelocity.y);
+            vel.setZ((float) linearVelocity.z);
+            this.body.setLinearVelocity(vel, true);
+        }
     }
 
     public Vec3 getAngularVelocity() {
-        return this.angularVelocity;
+        if (this.body == null)
+            return this.angularVelocity;
+        else
+            return Conversions.fromPxVec(this.body.getAngularVelocity());
     }
 
     public void setAngularVelocity(Vec3 angularVelocity) {
         this.angularVelocity = angularVelocity;
-        if (this.physxHandle != null)
-            this.physxHandle.setAngularVelocity(angularVelocity);
+        if (this.body != null) {
+            PxVec3 vel = this.body.getAngularVelocity();
+            vel.setX((float) angularVelocity.x);
+            vel.setY((float) angularVelocity.y);
+            vel.setZ((float) angularVelocity.z);
+            this.body.setAngularVelocity(vel, true);
+        }
     }
 
     public double getMass() {
-        return this.mass;
+        if (this.body == null)
+            return this.mass;
+        else
+            return this.body.getMass();
     }
 
     public void setMass(double mass) {
         this.mass = mass;
-        if (this.physxHandle != null)
-            this.physxHandle.setMass(mass);
-    }
-
-    public void applyForce(Vec3 force) {
-        if (this.physxHandle != null)
-            this.physxHandle.applyForce(force);
-    }
-
-    public void applyImpulse(Vec3 impulse) {
-        if (this.physxHandle != null)
-            this.physxHandle.applyImpulse(impulse);
-    }
-
-    public void updateFromPhysX() {
-        if (this.physxHandle != null) {
-            this.position = this.physxHandle.getPosition();
-            this.rotation = this.physxHandle.getRotation();
-            this.linearVelocity = this.physxHandle.getLinearVelocity();
-            this.angularVelocity = this.physxHandle.getAngularVelocity();
-            this.mass = this.physxHandle.getMass();
-        }
+        if (this.body != null)
+            this.body.setMass((float) mass);
     }
 
     public CompoundTag serializeNBT() {
         CompoundTag nbt = new CompoundTag();
         nbt.putUUID("id", id);
 
-        if (this.position != null) {
+        if (this.getPosition() instanceof Vec3 pos) {
             CompoundTag tag = new CompoundTag();
-            tag.putDouble("x", this.position.x);
-            tag.putDouble("y", this.position.y);
-            tag.putDouble("z", this.position.z);
+            tag.putDouble("x", pos.x);
+            tag.putDouble("y", pos.y);
+            tag.putDouble("z", pos.z);
             nbt.put("pos", tag);
         }
-        if (this.rotation != null) {
+        if (this.getRotation() instanceof Quaterniond quat) {
             CompoundTag tag = new CompoundTag();
-            tag.putDouble("x", this.rotation.x());
-            tag.putDouble("y", this.rotation.y());
-            tag.putDouble("z", this.rotation.z());
-            tag.putDouble("w", this.rotation.w());
+            tag.putDouble("x", quat.x());
+            tag.putDouble("y", quat.y());
+            tag.putDouble("z", quat.z());
+            tag.putDouble("w", quat.w());
             nbt.put("rot", tag);
         }
-        if (this.linearVelocity != null) {
+        if (this.getLinearVelocity() instanceof Vec3 linear) {
             CompoundTag tag = new CompoundTag();
-            tag.putDouble("x", this.linearVelocity.x);
-            tag.putDouble("y", this.linearVelocity.y);
-            tag.putDouble("z", this.linearVelocity.z);
+            tag.putDouble("x", linear.x);
+            tag.putDouble("y", linear.y);
+            tag.putDouble("z", linear.z);
             nbt.put("linearVel", tag);
         }
-        if (this.angularVelocity != null) {
+        if (this.getAngularVelocity() instanceof Vec3 angular) {
             CompoundTag tag = new CompoundTag();
-            tag.putDouble("x", this.angularVelocity.x);
-            tag.putDouble("y", this.angularVelocity.y);
-            tag.putDouble("z", this.angularVelocity.z);
+            tag.putDouble("x", angular.x);
+            tag.putDouble("y", angular.y);
+            tag.putDouble("z", angular.z);
             nbt.put("angularVel", tag);
         }
         nbt.putDouble("mass", mass);
@@ -195,11 +212,11 @@ public abstract class AbstractPhysicsObject {
 
     public abstract AABB getBoundingBox();
 
-    public void setPhysXHandle(PhysXRigidBodyWrapper handle) {
-        this.physxHandle = handle;
+    public void setPhysXBody(PxRigidDynamic body) {
+        this.body = body;
     }
 
-    public PhysXRigidBodyWrapper getPhysXHandle() {
-        return this.physxHandle;
+    public PxRigidDynamic getPhysXBody() {
+        return this.body;
     }
 }

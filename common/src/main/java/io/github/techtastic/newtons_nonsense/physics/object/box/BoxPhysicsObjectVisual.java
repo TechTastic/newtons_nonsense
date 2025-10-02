@@ -6,6 +6,7 @@ import dev.engine_room.flywheel.api.visualization.VisualizationContext;
 import dev.engine_room.flywheel.lib.instance.InstanceTypes;
 import dev.engine_room.flywheel.lib.instance.TransformedInstance;
 import dev.engine_room.flywheel.lib.model.Models;
+import io.github.techtastic.newtons_nonsense.NewtonsNonsense;
 import io.github.techtastic.newtons_nonsense.physics.client.AbstractPhysicsObjectVisual;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
@@ -42,7 +43,7 @@ public class BoxPhysicsObjectVisual extends AbstractPhysicsObjectVisual<BoxPhysi
         BoxPhysicsObject previousBox = getPreviousPhysicsObject();
         ClientLevel level = getLevel();
 
-        //NewtonsNonsense.LOGGER.info("Object {} Rendered!\nPosition: {}\nRotation: {}", box.getId(), box.getPosition(), box.getRotation());
+        NewtonsNonsense.LOGGER.info("Object {} Rendered!\nPosition: {}\nRotation: {}", box.getId(), box.getPosition(), box.getRotation());
 
         Vec3 targetPos = box.getPosition();
         Quaternionfc targetRot = new Quaternionf(box.getRotation());

@@ -27,6 +27,7 @@ public class PhysicsObjectType<T extends AbstractPhysicsObject> {
     }
 
     public T fromTag(CompoundTag nbt) {
+        NewtonsNonsense.LOGGER.info("NBT: {}", nbt);
         return factory.apply(nbt);
     }
 

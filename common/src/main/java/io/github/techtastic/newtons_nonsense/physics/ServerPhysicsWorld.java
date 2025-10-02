@@ -9,10 +9,7 @@ import physx.PxTopLevelFunctions;
 import physx.common.PxTransform;
 import physx.common.PxVec3;
 import physx.geometry.PxPlaneGeometry;
-import physx.physics.PxMaterial;
-import physx.physics.PxRigidStatic;
-import physx.physics.PxScene;
-import physx.physics.PxSceneDesc;
+import physx.physics.*;
 
 import java.util.Map;
 import java.util.UUID;
@@ -20,7 +17,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class ServerPhysicsWorld extends PhysicsWorld<ServerLevel> {
     private final Map<UUID, AbstractPhysicsObject> objects = new ConcurrentHashMap<>();
-    private final Map<UUID, PhysXRigidBodyWrapper> wrappers = new ConcurrentHashMap<>();
 
     private final Backend backend;
     private final PxScene scene;
@@ -54,7 +50,6 @@ public class ServerPhysicsWorld extends PhysicsWorld<ServerLevel> {
             tick(1/60f);
 
         this.objects.forEach((id, object) -> {
-            object.updateFromPhysX();
             NewtonsNonsense.LOGGER.info("Object {} Updated!\nPosition: {}\nRotation: {}", id, object.getPosition(), object.getRotation());
             NetworkManager.sendToPlayers(this.getLevel().getPlayers(player -> true), new PhysicsObjectPayload<>(object));
         });
@@ -77,33 +72,25 @@ public class ServerPhysicsWorld extends PhysicsWorld<ServerLevel> {
 
     @Override
     public void addPhysicsObject(AbstractPhysicsObject object) {
-        if (this.objects.containsKey(object.getId()) || this.wrappers.containsKey(object.getId()))
+        if (this.objects.containsKey(object.getId()))
             throw new RuntimeException("Attempted to create duplicate Physics Object with ID " + object.getId() + ", ignoring...");
 
         this.objects.put(object.getId(), object);
-        PhysXRigidBodyWrapper wrapper = this.wrappers.compute(object.getId(), (id, old) -> {
-            if (old != null) {
-                this.scene.removeActor(old.getActor());
-                old.cleanup();
-            }
 
-            return object.getPhysXHandle();
-        });
-        if (wrapper != null)
-            this.scene.addActor(wrapper.getActor());
+        PxShape[] shapes = object.gatherCollisionShapes(new CollisionShapeBuilder(), this.getLevel().registryAccess()).getShapes();
+        for (PxShape shape : shapes) {
+            object.getPhysXBody().attachShape(shape);
+        }
+
+        this.scene.addActor(object.getPhysXBody());
 
         NewtonsNonsense.LOGGER.info("Object {} Created!\nPosition: {}\nRotation: {}", object.getId(), object.getPosition(), object.getRotation());
     }
 
     @Override
     public void removePhysicsObject(AbstractPhysicsObject object) {
-        this.wrappers.computeIfPresent(object.getId(), (id, wrapper) -> {
-            this.scene.removeActor(wrapper.getActor());
-            wrapper.cleanup();
-            return null;
-        });
-
-        this.wrappers.remove(object.getId());
         this.objects.remove(object.getId());
+        this.scene.removeActor(object.getPhysXBody());
+        object.getPhysXBody().release();
     }
 }
