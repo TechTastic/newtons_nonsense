@@ -1,5 +1,8 @@
 package io.github.techtastic.newtons_nonsense.physics;
 
+import dev.architectury.platform.Platform;
+import dev.architectury.utils.Env;
+import io.github.techtastic.newtons_nonsense.NewtonsNonsense;
 import io.github.techtastic.newtons_nonsense.registries.PhysicsObjectType;
 import io.github.techtastic.newtons_nonsense.util.Conversions;
 import net.minecraft.client.Minecraft;
@@ -29,7 +32,7 @@ public abstract class AbstractPhysicsObject {
 
     public AbstractPhysicsObject(UUID id, Vec3 position, Quaterniondc rotation, Vec3 linearVelocity, Vec3 angularVelocity, double mass) {
         this.id = id;
-        if (Minecraft.getInstance().level != null)
+        if (Platform.getEnvironment() == Env.SERVER || Minecraft.getInstance().level == null || !Minecraft.getInstance().level.isClientSide)
             this.body = Backend.getPhysics().createRigidDynamic(new PxTransform());
         this.setPosition(position);
         this.setRotation(rotation);
@@ -52,9 +55,13 @@ public abstract class AbstractPhysicsObject {
     }
 
     public Vec3 getPosition() {
-        if (this.body == null)
+        NewtonsNonsense.LOGGER.info("getPosition() called for object {}, body is null: {}", this.id, this.body == null);
+
+        if (this.body == null) {
+            if (!Conversions.isValid(this.position))
+                return Vec3.ZERO;
             return this.position;
-        else
+        }else
             return Conversions.fromPxVec(this.body.getGlobalPose().getP());
     }
 
@@ -70,9 +77,11 @@ public abstract class AbstractPhysicsObject {
     }
 
     public Quaterniondc getRotation() {
-        if (this.body == null)
+        if (this.body == null) {
+            if (!Conversions.isValid(this.rotation))
+                return new Quaterniond();
             return this.rotation;
-        else
+        } else
             return Conversions.fromPxQuat(this.body.getGlobalPose().getQ());
     }
 
@@ -89,9 +98,11 @@ public abstract class AbstractPhysicsObject {
     }
 
     public Vec3 getLinearVelocity() {
-        if (this.body == null)
+        if (this.body == null) {
+            if (!Conversions.isValid(this.linearVelocity))
+                return Vec3.ZERO;
             return this.linearVelocity;
-        else
+        }else
             return Conversions.fromPxVec(this.body.getLinearVelocity());
     }
 
@@ -107,9 +118,11 @@ public abstract class AbstractPhysicsObject {
     }
 
     public Vec3 getAngularVelocity() {
-        if (this.body == null)
+        if (this.body == null) {
+            if (!Conversions.isValid(this.angularVelocity))
+                return Vec3.ZERO;
             return this.angularVelocity;
-        else
+        }else
             return Conversions.fromPxVec(this.body.getAngularVelocity());
     }
 

@@ -1,8 +1,11 @@
 package io.github.techtastic.newtons_nonsense.physics;
 
 import dev.architectury.networking.NetworkManager;
+import dev.architectury.platform.Platform;
+import dev.architectury.utils.Env;
 import io.github.techtastic.newtons_nonsense.NewtonsNonsense;
 import io.github.techtastic.newtons_nonsense.physics.networking.PhysicsObjectPayload;
+import net.minecraft.client.Minecraft;
 import net.minecraft.server.level.ServerLevel;
 import org.jetbrains.annotations.Nullable;
 import physx.PxTopLevelFunctions;
@@ -48,16 +51,16 @@ public class ServerPhysicsWorld extends PhysicsWorld<ServerLevel> {
     public void tryTick() {
         if (!this.pause)
             tick(1/60f);
-
-        this.objects.forEach((id, object) -> {
-            NewtonsNonsense.LOGGER.info("Object {} Updated!\nPosition: {}\nRotation: {}", id, object.getPosition(), object.getRotation());
-            NetworkManager.sendToPlayers(this.getLevel().getPlayers(player -> true), new PhysicsObjectPayload<>(object));
-        });
     }
 
     public void tick(float delta) {
         this.scene.simulate(delta);
         this.scene.fetchResults(true);
+
+        this.objects.forEach((id, object) -> {
+            NewtonsNonsense.LOGGER.info("Object {} Updated!\nPosition: {}\nRotation: {}", id, object.getPosition(), object.getRotation());
+            NetworkManager.sendToPlayers(this.getLevel().getPlayers(player -> true), new PhysicsObjectPayload<>(object));
+        });
     }
 
     @Override
@@ -72,6 +75,10 @@ public class ServerPhysicsWorld extends PhysicsWorld<ServerLevel> {
 
     @Override
     public void addPhysicsObject(AbstractPhysicsObject object) {
+        NewtonsNonsense.LOGGER.info("Creating Object {} while platform is {}, instance level exists ({}) and is clientside ({})", object.getId(), Platform.getEnvironment(), Minecraft.getInstance().level, (Minecraft.getInstance().level != null && Minecraft.getInstance().level.isClientSide));
+        if (Platform.getEnvironment() == Env.SERVER || Minecraft.getInstance().level == null || !Minecraft.getInstance().level.isClientSide)
+            return;
+
         if (this.objects.containsKey(object.getId()))
             throw new RuntimeException("Attempted to create duplicate Physics Object with ID " + object.getId() + ", ignoring...");
 
@@ -84,6 +91,7 @@ public class ServerPhysicsWorld extends PhysicsWorld<ServerLevel> {
 
         this.scene.addActor(object.getPhysXBody());
 
+        NetworkManager.sendToPlayers(this.getLevel().getPlayers(player -> true), new PhysicsObjectPayload<>(object));
         NewtonsNonsense.LOGGER.info("Object {} Created!\nPosition: {}\nRotation: {}", object.getId(), object.getPosition(), object.getRotation());
     }
 
